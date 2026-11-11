@@ -47,6 +47,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['onnxruntime-web'],
+    // vorab bündeln, sonst lädt der Dev-Server die Seite beim ersten MP3-Export neu
+    include: ['wasm-media-encoders'],
   },
   worker: {
     format: 'es',

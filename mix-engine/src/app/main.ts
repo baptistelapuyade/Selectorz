@@ -21,6 +21,8 @@ import {
   StretchPool,
   toMono,
   WavWriter,
+  Mp3Writer,
+  type AudioSink,
   type DiffStats,
   type ExecutionProvider,
   type MasterTempoMode,
@@ -31,6 +33,15 @@ import {
   type StretchedTrack,
   type Timeline,
   type TrackAnalysis,
+  type TransitionStyle,
+  type EditResult,
+  editTransition,
+  shiftGrid,
+  ALLOWED_BARS,
+  analysisKey,
+  getCachedAnalysis,
+  putCachedAnalysis,
+  clearAnalysisCache,
 } from '../engine';
 
 // ───────────── Helfer ─────────────
@@ -89,7 +100,7 @@ const metrics: {
   analysisWallMs?: number;
   prepareWallMs?: number;
   totalWallMs?: number;
-  render?: { ms: number; sections: number; realtimeFactor: number; peak: number; clippedSamples: number; peakSectionMB: number; fileMB: number };
+  render?: { format: string; ms: number; totalMs: number; sections: number; realtimeFactor: number; peak: number; clippedSamples: number; peakSectionMB: number; fileMB: number };
   memory?: { audioBuffersMB: number; browserMB?: number; jsHeapMB?: number; source: string; at: string }[];
   equality?: { sections?: DiffStats; live?: DiffStats };
 } = {};
@@ -157,7 +168,7 @@ function renderAnalysis() {
     $('analysisTable'),
     ['Track', 'Dauer', 'Dekodieren', 'Merkmale', 'Inferenz', 'Analyse gesamt', 'Modell laden', 'Modell/EP', 'BPM (Raster)', 'BPM (Median)', 'Raster-Abw.', 'Feinjustierung', 'passende Beats', 'erster Schlag', 'Takte', 'Phrasen-Versatz', 'Intro bis Takt', 'Outro ab Takt', 'Lautheit'],
     analyses.map((a) => [
-      a.title, fmtTime(a.duration), ms(a.timings.decodeMs), ms(a.timings.featuresMs), ms(a.timings.inferenceMs), ms(a.timings.totalMs),
+      a.title + (a.fromCache ? ' (Cache)' : ''), fmtTime(a.duration), ms(a.timings.decodeMs), ms(a.timings.featuresMs), ms(a.timings.inferenceMs), ms(a.timings.totalMs),
       a.timings.modelLoadMs ? ms(a.timings.modelLoadMs) : '–', `${a.model}/${a.executionProvider}`, n2(a.bpm), n2(a.bpmMedian),
       `${a.grid.residualMs.toFixed(1)} ms`, `${a.grid.phaseShiftMs > 0 ? '+' : ''}${a.grid.phaseShiftMs.toFixed(1)} ms`, pct(a.grid.inlierShare), pct(a.grid.downbeatConfidence), a.grid.barCount, a.phraseOffset,
       `${a.introEndBar} (${a.introSource})`, `${a.outroStartBar} (${a.outroSource})`, `${a.loudness.toFixed(1)} LUFS`,
@@ -180,8 +191,21 @@ async function analyzeAll(): Promise<void> {
   analyses = [];
   others.clear();
   const t = performance.now();
+  const useCache = $<HTMLInputElement>('useCache').checked;
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
+    const key = analysisKey(it.file, model);
+    const keyOther = analysisKey(it.file, other);
+    if (useCache) {
+      const hit = await getCachedAnalysis(key);
+      const hitOther = compare ? await getCachedAnalysis(keyOther) : undefined;
+      if (hit && (!compare || hitOther)) {
+        analyses.push({ ...hit, id: it.id, title: it.title, fromCache: true });
+        if (hitOther) others.set(it.id, { ...hitOther, id: it.id, title: it.title, fromCache: true });
+        renderAnalysis();
+        continue;
+      }
+    }
     status(`Analyse ${i + 1}/${items.length}: ${it.title} – dekodieren …`);
     const td = performance.now();
     let mono: Float32Array;
@@ -198,9 +222,12 @@ async function analyzeAll(): Promise<void> {
         status(`Analyse ${i + 1}/${items.length}: ${it.title} – ${stage === 'inference' ? `Beat This! ${d}/${tot}` : 'Merkmale'}`),
       );
       analyses.push(a);
+      void putCachedAnalysis(key, a);
       if (copy) {
         status(`Analyse ${i + 1}/${items.length}: ${it.title} – Vergleichsmodell …`);
-        others.set(it.id, await analyzer.analyze({ id: it.id, title: it.title, pcm: copy, decodeMs, model: other, ep }));
+        const o = await analyzer.analyze({ id: it.id, title: it.title, pcm: copy, decodeMs, model: other, ep });
+        others.set(it.id, o);
+        void putCachedAnalysis(keyOther, o);
       }
     } catch (err) {
       error(`„${it.title}“: Analyse fehlgeschlagen: ${err instanceof Error ? err.message : err}`);
@@ -221,23 +248,61 @@ function renderMixInfo() {
   ul.innerHTML = '';
   for (const w of r.warnings) { const li = document.createElement('li'); li.textContent = w; ul.appendChild(li); }
   const title = (i: number) => r.tracks[i].title;
+  const disabled = busy || !media.size;
+  const shiftRow = (label: string, i: number, key: 'outBarDelta' | 'inBarDelta') => {
+    const span = document.createElement('span');
+    span.append(label + ' ');
+    for (const d of [-8, -1, 1, 8]) span.append(button(`${d > 0 ? '+' : '−'}${Math.abs(d)}`, () => void applyEdit(editTransition(r, analyses, i, { [key]: d })), disabled));
+    return span;
+  };
+  const selectEl = (options: Array<[string, string]>, value: string, onChange: (v: string) => void) => {
+    const el = document.createElement('select');
+    for (const [v, l] of options) { const o = document.createElement('option'); o.value = v; o.textContent = l; el.appendChild(o); }
+    el.value = value;
+    el.disabled = disabled;
+    el.onchange = () => onChange(el.value);
+    return el;
+  };
   table(
     $('transitionTable'),
-    ['#', 'Track (raus)', 'Out-Takt', 'Track (rein)', 'In-Takt', 'Länge', 'Start im Mix', 'Bass swap', 'Ende', ''],
-    tl.transitions.map((t, i) => [
-      i + 1, title(t.from), t.outBar, title(t.to), t.inBar, `${t.bars} Takte / ${(t.end - t.start).toFixed(1)} s`,
-      fmtTime(t.start), fmtTime(t.bassSwap), fmtTime(t.end),
-      button('▶ anhören', () => void playFrom(Math.max(0, t.start - 8)).catch((e) => error(String(e))), !media.size),
-    ]),
+    ['#', 'Track (raus)', 'Out-Takt', 'Track (rein)', 'In-Takt', 'Länge', 'Stil', 'Bass swap', 'Start im Mix', 'Wechsel', 'Ende', 'Verschieben', ''],
+    tl.transitions.map((t, i) => {
+      const rt = r.transitions[i];
+      const bass = document.createElement('input');
+      bass.type = 'checkbox';
+      bass.checked = rt.bassSwap;
+      bass.disabled = disabled || rt.style === 'cut';
+      bass.onchange = () => void applyEdit(editTransition(r, analyses, i, { bassSwap: bass.checked }));
+      const shifts = document.createElement('div');
+      shifts.append(shiftRow('Out', i, 'outBarDelta'), document.createElement('br'), shiftRow('In', i, 'inBarDelta'));
+      return [
+        i + 1 + (rt.edited ? ' ✎' : ''), title(t.from), t.outBar, title(t.to), t.inBar,
+        selectEl(ALLOWED_BARS.map((b) => [String(b), `${b} Takte`]), String(rt.bars), (v) => void applyEdit(editTransition(r, analyses, i, { bars: Number(v) as 8 | 16 | 32 | 64 }))),
+        selectEl([['blend', 'Blend'], ['quick', 'Quick'], ['cut', 'Cut']], rt.style, (v) => void applyEdit(editTransition(r, analyses, i, { style: v as TransitionStyle }))),
+        bass,
+        fmtTime(t.start), fmtTime(t.bassSwap), fmtTime(t.end), shifts,
+        button('▶ anhören', () => void playFrom(Math.max(0, t.start - 8)).catch((e) => error(String(e))), !media.size),
+      ];
+    }),
   );
   table(
     $('trackTable'),
-    ['Track', 'BPM', 'Tempo im Mix', 'Gain', 'Bereich im Original', 'Im Mix', 'Tracklist (Takt 0)'],
-    tl.tracks.map((t, i) => [
-      title(i), n2(r.tracks[i].bpm), `${t.stretch > 1 ? '−' : '+'}${Math.abs((1 / t.stretch - 1) * 100).toFixed(2)} %`, `${r.tracks[i].gainDb.toFixed(1)} dB`,
-      `${fmtTime(t.sourceStart)} – ${fmtTime(t.sourceEnd)}`, `${fmtTime(t.mixStart)} – ${fmtTime(t.mixEnd)}`,
-      fmtTime(i === 0 ? 0 : Math.max(0, mixTimeOfBar(tl, r, analyses, i, r.transitions[i - 1].inBar))),
-    ]),
+    ['Track', 'BPM', 'Tempo im Mix', 'Gain', 'Bereich im Original', 'Im Mix', 'Tracklist (Takt 0)', 'Eins („Set the one here“)'],
+    tl.tracks.map((t, i) => {
+      const one = document.createElement('span');
+      const sh = r.tracks[i].gridShiftBeats;
+      one.append(
+        button('−1 Beat', () => void applyEdit(shiftGrid(r, analyses, i, -1)), disabled),
+        ` ${sh > 0 ? '+' : ''}${sh} `,
+        button('+1 Beat', () => void applyEdit(shiftGrid(r, analyses, i, 1)), disabled),
+      );
+      return [
+        title(i), n2(r.tracks[i].bpm), `${t.stretch > 1 ? '−' : '+'}${Math.abs((1 / t.stretch - 1) * 100).toFixed(2)} %`, `${r.tracks[i].gainDb.toFixed(1)} dB`,
+        `${fmtTime(t.sourceStart)} – ${fmtTime(t.sourceEnd)}`, `${fmtTime(t.mixStart)} – ${fmtTime(t.mixEnd)}`,
+        fmtTime(i === 0 ? 0 : Math.max(0, mixTimeOfBar(tl, r, analyses, i, r.transitions[i - 1].inBar))),
+        one,
+      ];
+    }),
   );
   $('recipe').textContent = JSON.stringify(r, null, 2);
   $<HTMLButtonElement>('toggleRecipe').disabled = false;
@@ -249,6 +314,29 @@ function doPlan() {
   recipe = plan(ordered, planOptions());
   timeline = resolveTimeline(recipe, ordered);
   renderMixInfo();
+}
+
+/** Rezept-Änderung übernehmen: Zeitleiste neu, gestreckt wird nur, wenn der Rand nicht reicht. */
+async function applyEdit(res: EditResult) {
+  if (busy) { status('Bitte warten, es läuft noch etwas …'); return; }
+  if (!res.ok) { status(`Nicht möglich: ${res.error}`); return; }
+  const wasPlaying = player?.playing ? player.position : null;
+  player?.stop();
+  busy = true;
+  try {
+    recipe = res.recipe;
+    timeline = resolveTimeline(recipe, analyses);
+    renderMixInfo();
+    await prepare();
+    status('Geändert.');
+    if (wasPlaying !== null) await playFrom(wasPlaying);
+  } catch (err) {
+    error(err instanceof Error ? err.message : String(err));
+  } finally {
+    busy = false;
+    renderMixInfo();
+    renderMetrics();
+  }
 }
 
 // ───────────── Strecken ─────────────
@@ -309,40 +397,51 @@ $('stop').onclick = () => { player?.stop(); cancelAnimationFrame(raf); };
 
 // ───────────── Export ─────────────
 $('export').onclick = async () => {
-  if (!timeline || busy) return;
+  if (!timeline) return;
+  if (busy) { status('Bitte warten, es läuft noch etwas …'); return; }
   busy = true;
   player?.stop();
   const prog = $<HTMLProgressElement>('exportProgress');
   prog.hidden = false;
+  const format = sel('format') as 'mp3' | 'wav';
   try {
     const sr = MIX_SAMPLE_RATE;
     const frames = Math.round(timeline.duration * sr);
-    const wav = new WavWriter(sr, 2, frames);
+    const sink: AudioSink = format === 'mp3' ? new Mp3Writer(sr, 2, 320) : new WavWriter(sr, 2, frames);
+    const t = performance.now();
     const stats = await renderMix(timeline, media, {
       sampleRate: sr,
       sectionSec: 30,
       prerollSec: 2,
-      onSection: (chunk, k, count) => { wav.push(chunk); prog.value = (k + 1) / count; $('exportInfo').textContent = `Abschnitt ${k + 1}/${count}`; },
+      onSection: async (chunk, k, count) => {
+        await sink.push(chunk);
+        prog.value = (k + 1) / count;
+        $('exportInfo').textContent = `Abschnitt ${k + 1}/${count}`;
+      },
     });
-    const blob = wav.finish();
-    const url = URL.createObjectURL(blob);
+    $('exportInfo').textContent = format === 'mp3' ? 'Kodiere MP3 …' : '';
+    const blob = await sink.finish();
+    const totalMs = performance.now() - t;
+    const name = `selectorz-spike-mix.${sink.extension}`;
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'selectorz-spike-mix.wav';
-    a.textContent = `selectorz-spike-mix.wav herunterladen (${(blob.size / 1048576).toFixed(0)} MB)`;
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.textContent = `${name} herunterladen (${(blob.size / 1048576).toFixed(1)} MB)`;
     metrics.render = {
-      ms: stats.ms, sections: stats.sections, realtimeFactor: timeline.duration / (stats.ms / 1000), peak: wav.peak,
-      clippedSamples: wav.clipped, peakSectionMB: stats.peakSectionBytes / 1048576, fileMB: blob.size / 1048576,
+      format: format === 'mp3' ? 'MP3 320 kbps CBR' : 'WAV 16 Bit',
+      ms: stats.ms, totalMs, sections: stats.sections, realtimeFactor: timeline.duration / (totalMs / 1000), peak: sink.peak,
+      clippedSamples: sink.clipped, peakSectionMB: stats.peakSectionBytes / 1048576, fileMB: blob.size / 1048576,
     };
     const info = $('exportInfo');
-    info.textContent = `Renderzeit ${(stats.ms / 1000).toFixed(1)} s (${metrics.render.realtimeFactor.toFixed(0)}× Echtzeit), ${stats.sections} Abschnitte, Spitze ${dbStr(20 * Math.log10(wav.peak))}, übersteuert: ${wav.clipped} Samples · `;
+    info.textContent = `${metrics.render.format}: Rendern ${(stats.ms / 1000).toFixed(1)} s, gesamt ${(totalMs / 1000).toFixed(1)} s (${metrics.render.realtimeFactor.toFixed(0)}× Echtzeit), ${stats.sections} Abschnitte, Spitze ${dbStr(20 * Math.log10(sink.peak))}, übersteuert: ${sink.clipped} Samples · `;
     info.appendChild(a);
-    await recordMemory('nach Export');
+    void recordMemory('nach Export'); // läuft im Hintergrund, blockiert keine Knöpfe
   } catch (err) {
     error(`Export fehlgeschlagen: ${err instanceof Error ? err.message : err}`);
   } finally {
     busy = false;
     renderMetrics();
+    renderMixInfo();
   }
 };
 
@@ -410,7 +509,7 @@ function metricsJson() {
     tracks: analyses.map((a) => ({
       title: a.title, durationSec: +a.duration.toFixed(1), model: a.model, ep: a.executionProvider,
       decodeMs: Math.round(a.timings.decodeMs), featuresMs: Math.round(a.timings.featuresMs), inferenceMs: Math.round(a.timings.inferenceMs),
-      analysisMs: Math.round(a.timings.totalMs), modelLoadMs: Math.round(a.timings.modelLoadMs),
+      analysisMs: Math.round(a.timings.totalMs), modelLoadMs: Math.round(a.timings.modelLoadMs), fromCache: !!a.fromCache,
       bpm: +a.bpm.toFixed(3), bpmMedian: +a.bpmMedian.toFixed(2), gridResidualMs: +a.grid.residualMs.toFixed(1), phaseShiftMs: +a.grid.phaseShiftMs.toFixed(1), inlierShare: +a.grid.inlierShare.toFixed(3),
       downbeatConfidence: +a.grid.downbeatConfidence.toFixed(2), bars: a.grid.barCount, phraseOffset: a.phraseOffset,
       introEndBar: a.introEndBar, introSource: a.introSource, outroStartBar: a.outroStartBar, outroSource: a.outroSource, loudness: +a.loudness.toFixed(1),
@@ -441,7 +540,7 @@ function renderMetrics() {
   if (metrics.totalWallMs !== undefined) rows.push(['Ablegen bis hörbar (Analyse + Planung + Strecken)', `${(metrics.totalWallMs / 1000).toFixed(1)} s`]);
   if (metrics.render) {
     const r = metrics.render;
-    rows.push(['Export-Renderzeit', `${(r.ms / 1000).toFixed(1)} s, ${r.realtimeFactor.toFixed(0)}× Echtzeit, ${r.sections} Abschnitte à 30 s (+2 s Vorlauf), je ${r.peakSectionMB.toFixed(0)} MB`]);
+    rows.push([`Export (${r.format})`, `Rendern ${(r.ms / 1000).toFixed(1)} s, gesamt inkl. Kodieren ${(r.totalMs / 1000).toFixed(1)} s, ${r.realtimeFactor.toFixed(0)}× Echtzeit, ${r.sections} Abschnitte à 30 s (+2 s Vorlauf), je ${r.peakSectionMB.toFixed(0)} MB`]);
     rows.push(['Export-Pegel', `Spitze ${dbStr(20 * Math.log10(r.peak))}, übersteuerte Samples ${r.clippedSamples}, Datei ${r.fileMB.toFixed(0)} MB`]);
   }
   rows.push(['Gestreckte Audio-Puffer (eigene Rechnung)', mb(audioBytes())]);
@@ -453,6 +552,7 @@ function renderMetrics() {
   table($('metricsTable'), ['Messwert', 'Wert'], rows);
 }
 
+$('clearCache').onclick = async () => { await clearAnalysisCache(); status('Analyse-Cache geleert.'); };
 $('measureMem').onclick = () => void recordMemory('auf Knopfdruck');
 $('copyMetrics').onclick = async () => {
   await navigator.clipboard.writeText(JSON.stringify(metricsJson(), null, 2));
@@ -488,7 +588,7 @@ $('run').onclick = async () => {
     status('Fertig. Vorschau und Export bereit.');
     setReady(true);
     renderMixInfo();
-    await recordMemory('nach dem Strecken');
+    void recordMemory('nach dem Strecken'); // läuft im Hintergrund, blockiert keine Knöpfe
   } catch (err) {
     error(err instanceof Error ? err.message : String(err));
     status('');
@@ -497,6 +597,7 @@ $('run').onclick = async () => {
     renderFiles();
     renderMetrics();
     setReady(media.size > 0);
+    renderMixInfo();
   }
 };
 
@@ -510,13 +611,14 @@ $('replan').onclick = async () => {
     status('Strecke neu, wo nötig …');
     await prepare();
     status('Neu geplant.');
-    await recordMemory('nach Neuplanung');
+    void recordMemory('nach Neuplanung'); // läuft im Hintergrund, blockiert keine Knöpfe
   } catch (err) {
     error(err instanceof Error ? err.message : String(err));
   } finally {
     busy = false;
     setReady(media.size > 0);
     renderMetrics();
+    renderMixInfo();
   }
 };
 

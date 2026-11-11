@@ -7,6 +7,7 @@ import type { PlanTrack } from './plan';
 export const BASS_CUT_DB = -40;
 const FADE_STEPS = 8;
 const EDGE_FADE_S = 0.01;
+const CUT_FADE_S = 0.01;
 
 /** Taktzeit im Original unter Berücksichtigung der Raster-Korrektur. */
 export function sourceBarTime(t: PlanTrack, gridShiftBeats: number, bar: number): number {
@@ -59,7 +60,6 @@ export function resolveTimeline(recipe: MixRecipe, analyses: PlanTrack[]): Timel
   const transitions: TimelineTransition[] = [];
   for (let i = 0; i < tracks.length; i++) {
     const tr = tracks[i];
-    const tIn = recipe.transitions.find((x) => x.from === i - 1);
     const tOut = recipe.transitions.find((x) => x.from === i);
     if (i === 0) {
       tr.sourceStart = 0;
@@ -86,6 +86,8 @@ export function resolveTimeline(recipe: MixRecipe, analyses: PlanTrack[]): Timel
         outBar: tOut.outBar,
         inBar: tOut.inBar,
         bars: tOut.bars,
+        style: tOut.style ?? 'blend',
+        bassSwapOn: tOut.bassSwap ?? true,
         start,
         bassSwap,
         end,
@@ -95,24 +97,29 @@ export function resolveTimeline(recipe: MixRecipe, analyses: PlanTrack[]): Timel
       tr.mixEnd = mixAt(tr.sourceEnd);
     }
 
-    // Fader
-    const fader: Envelope = [];
+    // Fader und Bass swap je nach Stil
     const prev = transitions.find((x) => x.to === i);
-    if (prev && tIn) {
-      fader.push(...fadeIn(prev.start, prev.bassSwap));
+    const next = transitions.find((x) => x.from === i);
+    const fader: Envelope = [];
+    const low: Envelope = [];
+    if (prev) {
+      if (prev.style === 'cut') fader.push([prev.bassSwap - CUT_FADE_S / 2, 0], [prev.bassSwap + CUT_FADE_S / 2, 1]);
+      else if (prev.style === 'quick') fader.push(...fadeIn(prev.bassSwap - barSec, prev.bassSwap));
+      else fader.push(...fadeIn(prev.start, prev.bassSwap));
+      if (prev.style !== 'cut' && prev.bassSwapOn) {
+        low.push([prev.start, BASS_CUT_DB], [prev.bassSwap - swapRamp / 2, BASS_CUT_DB], [prev.bassSwap + swapRamp / 2, 0]);
+      } else low.push([prev.start, 0]);
     } else {
       fader.push([tr.mixStart, 0], [tr.mixStart + EDGE_FADE_S, 1]);
+      low.push([tr.mixStart, 0]);
     }
-    const next = transitions.find((x) => x.from === i);
-    if (next) fader.push(...fadeOut(next.bassSwap, next.end));
-    else fader.push([tr.mixEnd - EDGE_FADE_S, 1], [tr.mixEnd, 0]);
+    if (next) {
+      if (next.style === 'cut') fader.push([next.bassSwap - CUT_FADE_S / 2, 1], [next.bassSwap + CUT_FADE_S / 2, 0]);
+      else if (next.style === 'quick') fader.push(...fadeOut(next.bassSwap, next.bassSwap + barSec));
+      else fader.push(...fadeOut(next.bassSwap, next.end));
+      if (next.style !== 'cut' && next.bassSwapOn) low.push([next.bassSwap - swapRamp / 2, 0], [next.bassSwap + swapRamp / 2, BASS_CUT_DB]);
+    } else fader.push([tr.mixEnd - EDGE_FADE_S, 1], [tr.mixEnd, 0]);
     tr.fader = fader;
-
-    // Bass swap (Low-Shelf)
-    const low: Envelope = [];
-    if (prev) low.push([prev.start, BASS_CUT_DB], [prev.bassSwap - swapRamp / 2, BASS_CUT_DB], [prev.bassSwap + swapRamp / 2, 0]);
-    else low.push([tr.mixStart, 0]);
-    if (next) low.push([next.bassSwap - swapRamp / 2, 0], [next.bassSwap + swapRamp / 2, BASS_CUT_DB]);
     tr.lowShelfDb = low;
   }
 

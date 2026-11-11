@@ -1,6 +1,9 @@
 // WAV-Schreiber (PCM 16 Bit, interleaved), abschnittsweise befüllbar.
+import type { AudioSink } from './sink';
 
-export class WavWriter {
+export class WavWriter implements AudioSink {
+  readonly mimeType = 'audio/wav';
+  readonly extension = 'wav';
   readonly parts: BlobPart[] = [];
   private written = 0;
   peak = 0;

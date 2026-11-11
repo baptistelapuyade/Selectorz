@@ -39,6 +39,8 @@
       <label>Modell
         <select id="model"><option value="small">klein (small0)</option><option value="large">groß (final0)</option></select></label>
       <label><input id="compare" type="checkbox" /> zusätzlich mit dem anderen Modell vergleichen</label>
+      <label><input id="useCache" type="checkbox" checked /> Analyse-Cache nutzen</label>
+      <button id="clearCache">Cache leeren</button>
       <label>Ausführung
         <select id="ep"><option value="auto">auto (WebGPU → WASM)</option><option value="webgpu">WebGPU</option><option value="wasm">WASM</option></select></label>
     </div>
@@ -81,7 +83,9 @@
 
     <h2>6 · Export</h2>
     <div class="row">
-      <button id="export" disabled>WAV exportieren</button>
+      <label>Format
+        <select id="format"><option value="mp3">MP3 320 kbps</option><option value="wav">WAV 16 Bit (verlustfrei)</option></select></label>
+      <button id="export" disabled>Exportieren</button>
       <progress id="exportProgress" value="0" max="1" hidden></progress>
       <span id="exportInfo"></span>
     </div>
@@ -100,6 +104,12 @@
       <button id="copyMetrics">Messwerte kopieren (JSON, ohne Audio)</button>
     </div>
     <table id="metricsTable"></table>
+
+    <h2>Lizenzen</h2>
+    <div class="muted">Beat This! (MIT, JKU Linz) · ONNX Runtime Web (MIT) · Signalsmith Stretch (MIT) ·
+      MP3-Kodierung mit <a href="https://lame.sourceforge.io/">LAME</a> 3.100 (LGPL, als eigene, austauschbare WASM-Datei; Quelltext:
+      <a href="https://github.com/arseneyr/lame/tree/98db548e8e851defbba3184125ce10725355c332">LAME 3.100 + Build-Anpassung</a>,
+      <a href="https://github.com/arseneyr/wasm-media-encoders">wasm-media-encoders</a>). Details in LICENSES.md.</div>
 
     <script type="module" src="/src/app/main.ts"></script>
   </body>

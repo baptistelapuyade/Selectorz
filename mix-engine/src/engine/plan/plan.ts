@@ -130,7 +130,7 @@ export function plan(tracks: PlanTrack[], options: Partial<PlanOptions> = {}): M
       inBar = 0;
       warnings.push(`„${a.title}“ → „${b.title}“: zu kurz für einen Übergang an einer Phrase.`);
     }
-    transitions.push({ from: i, outBar, inBar, bars, bassSwapBar: bars / 2, style: 'blend', edited: false });
+    transitions.push({ from: i, outBar, inBar, bars, bassSwapBar: bars / 2, bassSwap: true, style: 'blend', edited: false });
     minOut = inBar + bars;
   }
 

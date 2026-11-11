@@ -1,7 +1,7 @@
 # Selectorz Automix – Spike (`mix-engine/`)
 
 Go/No-go-Prototyp für den Automix (Umsetzungsplan v0.3, Phase S). Eine schlichte lokale Testseite ohne Design:
-Dateien ablegen → Analyse (Beat This!) → Auto-Mix nach 3.3 → Vorschau im Browser und WAV-Export aus demselben Graphen.
+Dateien ablegen → Analyse (Beat This!) → Auto-Mix nach 3.3 → Übergänge nachjustieren → Vorschau im Browser und Export (MP3 320 kbps oder WAV) aus demselben Graphen.
 
 **Alles läuft lokal.** Audio wird nie hochgeladen. Aus dem Netz kommen nur einmalig die Modelldateien (`npm run models`).
 
@@ -20,10 +20,12 @@ npm run dev         # startet http://localhost:5173
 
 Dann <http://localhost:5173> in Chrome öffnen.
 
-- `npm test` startet die Unit-Tests (Planung, Zeitleiste, Raster, Postprocessing, Stretching, AIFF, WAV).
+- `npm test` startet die Unit-Tests (Planung, Bearbeiten, Zeitleiste, Raster, Postprocessing, Stretching, AIFF, WAV).
 - `npm run typecheck` prüft die Typen.
 
-**Falls `npm run models` das kleine Modell nicht laden kann** (die Quelle für `small0` ist ein Hugging-Face-Spiegel), lässt es sich aus dem offiziellen Checkpoint selbst erzeugen:
+Zum kleinen Modell: Es ist dasselbe Beat This! in klein (`small0`, ca. 2 M statt 20 M Parameter): schneller, laut den Autoren etwas ungenauer. Fertige ONNX-Dateien gibt es nur als Kopien auf Hugging Face; `npm run models` probiert zwei Quellen (die zweite mit veröffentlichter Prüfsumme) und schreibt die Prüfsumme in `public/models/models.json`. Eine vorhandene Datei wird nie überschrieben; neu laden mit `npm run models -- --force`.
+
+**Falls `npm run models` das kleine Modell nicht laden kann**, lässt es sich aus dem offiziellen Checkpoint selbst erzeugen:
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
@@ -41,12 +43,20 @@ Tipp: Nummeriere die Dateien (`01_…`, `02_…`). Beim Ablegen wird nach Datein
 
 1. **Dateien** ablegen.
 2. **Einstellungen**: zuerst Modell „klein“, Ausführung „auto“. Für den Modellvergleich das Häkchen „zusätzlich mit dem anderen Modell vergleichen“ setzen (verdoppelt die Analysezeit).
-3. **„Analysieren und mixen“**: Analyse, Planung und Strecken laufen nacheinander. Danach sind Vorschau, Export und Tests bereit.
+3. **„Analysieren und mixen“**: Analyse, Planung und Strecken laufen nacheinander. Danach sind Vorschau, Export und Tests bereit. Analysen landen im lokalen Cache des Browsers (IndexedDB, nur Zahlen, kein Audio): Ein zweiter Lauf mit denselben Dateien und demselben Modell startet in Sekunden. „Cache leeren“ erzwingt eine neue Analyse.
 4. **Vorschau**: „▶ Von vorn“ oder in der Übergangsliste „▶ anhören“ (startet 8 s vor dem Übergang).
-5. **Export**: „WAV exportieren“, danach erscheint der Download-Link.
-6. **Rezept**: „Rezept (JSON) anzeigen“ bzw. „Rezept kopieren“.
-7. **Gleichheitstests**: prüfen, dass Vorschau und Export dasselbe ausgeben (Plan 3.4).
-8. **Messwerte**: „Messwerte kopieren“ legt alle Zahlen als JSON in die Zwischenablage (ohne Audio, nur Titel und Zahlen). Das bitte nach dem Hörtest mitschicken.
+5. **Übergänge nachjustieren** (Vorstufe von Screen 3 „Shape“), direkt in der Übergangsliste:
+   - **Verschieben**: Out bzw. In um −8/−1/+1/+8 Takte. Out und In bewegen sich getrennt; gemeinsam bleiben beide Tracks taktgenau übereinander.
+   - **Länge**: 8, 16, 32, 64 Takte (Bass swap in der Mitte).
+   - **Stil**: Blend (lange Blende), Quick (je ein Takt Ein- und Ausblenden um den Wechsel), Cut (harter Schnitt auf der Eins).
+   - **Bass swap** an/aus.
+   - **„Set the one here“** in der Track-Tabelle: Eins um −1/+1 Beat verschieben, wenn ein Track um einen Beat versetzt einsteigt.
+   - Ungültige Änderungen (über das Trackende, Überlappung) werden abgelehnt, mit Grund in der Statuszeile. Geänderte Übergänge tragen ein ✎. Neu gestreckt wird nur, wenn ein Übergang mehr als 32 Takte aus dem gestreckten Bereich wandert.
+   - Läuft die Vorschau, spielt sie nach der Änderung an derselben Stelle weiter.
+6. **Export**: Format wählen (MP3 320 kbps CBR als Standard, WAV 16 Bit verlustfrei), „Exportieren“, danach erscheint der Download-Link. Die MP3 wird im Worker kodiert, während die nächsten Abschnitte gerendert werden.
+7. **Rezept**: „Rezept (JSON) anzeigen“ bzw. „Rezept kopieren“.
+8. **Gleichheitstests**: prüfen, dass Vorschau und Export dasselbe ausgeben (Plan 3.4).
+9. **Messwerte**: „Messwerte kopieren“ legt alle Zahlen als JSON in die Zwischenablage (ohne Audio, nur Titel und Zahlen). Das bitte nach dem Hörtest mitschicken.
 
 Master-Tempo und Übergangslänge lassen sich nach der Analyse ändern („Neu planen“). Neu gestreckt wird nur, wenn sich das Master-Tempo ändert oder ein Übergang aus dem gestreckten Bereich herausfällt.
 
@@ -62,7 +72,7 @@ Master-Tempo und Übergangslänge lassen sich nach der Analyse ändern („Neu p
 | erster Schlag | Anteil der erkannten Downbeats, die zur gewählten „Eins“ passen. |
 | Intro bis / Outro ab | Phrasengrenzen; in Klammern, woraus sie abgeleitet sind (`energy`, `bass` oder `default` = keine klare Kante gefunden). |
 | Übergänge | Track raus/rein, Out-Takt, In-Takt, Länge in Takten und Sekunden, Bass swap, Position im Mix. |
-| Export-Renderzeit | Gesamtzeit, Echtzeitfaktor, Zahl der Abschnitte (30 s + 2 s Vorlauf), Spitzenpegel, übersteuerte Samples. |
+| Export | Format, Renderzeit und Gesamtzeit inkl. Kodieren, Echtzeitfaktor, Zahl der Abschnitte (30 s + 2 s Vorlauf), Spitzenpegel, übersteuerte Samples, Dateigröße. |
 | Speicher | Eigene Rechnung der gestreckten Puffer, dazu die Browser-Messung (`measureUserAgentSpecificMemory`, nur Chrome, kann bis zu 20 s dauern). |
 | Gleichheit | Abweichung Abschnitte vs. am Stück und Live-Mitschnitt vs. Export. |
 
@@ -78,7 +88,9 @@ Engine-Code ist UI-unabhängig und liegt unter `src/engine/` (Modulgrenzen wie P
 | stretch | `stretch/*.ts`, Worker `stretch.worker.ts` | Signalsmith Stretch offline im Worker-Pool, latenzkompensiert, Tonhöhe bleibt |
 | graph | `graph/mixGraph.ts`, `graph/live.ts` | Ein Graph für AudioContext und OfflineAudioContext: Quelle → Trim → Low-Shelf (Bass swap) → Fader → Summe → Limiter |
 | render | `render/render.ts` | Export in Abschnitten mit Vorlauf, Gleichheitstests |
-| encode | `encode/wav.ts` | WAV 16 Bit, abschnittsweise |
+| plan (Bearbeiten) | `plan/edit.ts` | Reine Funktionen `editTransition()` und `shiftGrid()` mit Prüfung (`validateRecipe()`); Unit-Tests in `plan/edit.test.ts` |
+| encode | `encode/wav.ts`, `encode/mp3.ts`, Worker `mp3.worker.ts` | WAV 16 Bit; MP3 320 kbps CBR mit LAME 3.100 (WASM) im Worker, abschnittsweise |
+| Cache | `cache.ts` | Analyse-Cache in IndexedDB (Schlüssel: Dateiname, Größe, Änderungsdatum, Modell, Engine-Version) |
 
 Das **Rezept** (`MixRecipe`) enthält nur Entscheidungen: Master-Tempo, Gain pro Track, Raster-Korrektur, pro Übergang Out-Takt, In-Takt, Länge, Bass-swap-Takt und Stil. Alle Zeiten leitet `resolveTimeline()` daraus ab. So muss der Editor später nur das Rezept ändern, und der Server speichert nur das Rezept (G2).
 
@@ -91,7 +103,7 @@ Das **Rezept** (`MixRecipe`) enthält nur Entscheidungen: Master-Tempo, Gain pro
 - **Limiter** = `DynamicsCompressorNode` (Schwelle −2 dB, Ratio 20) nach −2 dB Summenabsenkung. Er verzögert den Mix um ca. 6 ms. Für das Produkt ist ein eigener Limiter als AudioWorklet sinnvoll (browserübergreifend gleich).
 - **Lautheit** wird auf Mono bei 22 050 Hz gemessen; für die relative Angleichung reicht das. Ziel ist der Median der Tracks (begrenzt auf −14 bis −8 LUFS), Anhebung max. +6 dB.
 - **Master-Tempo** (O3): Standard Median, umschaltbar auf Track 1 oder „kleinste maximale Streckung“. Ab 6 % Streckung gibt es einen Hinweis plus Tempo-Vorschlag.
-- **Export** nur WAV 16 Bit (MP3 erst nach Lizenzprüfung des Encoders, siehe `LICENSES.md`).
+- **MP3** mit LAME 3.100 (LGPL) als eigene, unveränderte, austauschbare WASM-Datei. Lizenzprüfung und Pflichten in `LICENSES.md`.
 
 ## Vorab-Prüfung (synthetische Tracks, ohne Hörtest)
 
@@ -108,7 +120,11 @@ Vor der Übergabe lief der Spike in der Entwicklungsumgebung (headless Chrome, 2
 | Abschnitte vs. am Stück, Live vs. Export | bitgenau gleich (Abweichung −∞ dB) |
 | Analyse (WASM, großes Modell, 2 Kerne) | ca. 56 s pro 3-Minuten-Track |
 | Strecken | ca. 4,5 s pro 3-Minuten-Track (ein Worker) |
-| Export | ca. 130× Echtzeit |
+| Export WAV | ca. 130–160× Echtzeit |
+| Export MP3 320 kbps | ca. 50× Echtzeit (Kodieren im Worker), Datei 320 kbps CBR, 44,1 kHz Stereo |
+| MP3 gegen WAV | gleich bis auf die übliche Encoder-Verzögerung von 1105 Samples (25 ms) am Anfang; für die Tracklist bedeutungslos |
+| Übergänge bearbeiten | Verschieben, Länge, Stil, Bass swap und „Set the one here“ greifen ohne neues Stretching; Gleichheitstests danach weiter bitgenau; ungültige Änderungen werden mit Grund abgelehnt |
+| Analyse-Cache | zweiter Lauf mit denselben 2 Tracks: 9 s statt 2 min |
 | Speicher | ca. 64 MB gestreckter Puffer pro 3-Minuten-Track; Browser gesamt ca. 0,8–0,9 GB bei 2–3 Tracks |
 
 Die Feinjustierung („Feinjustierung“ in der Analyse-Tabelle) richtet das Raster nach Beat This! an den Kick-Einsätzen aus. Ohne sie lag der Versatz im Übergang bei rund 7,5 ms, weil das Modell je nach Material einige Millisekunden früher oder später markiert.
@@ -125,15 +141,15 @@ Pro Übergang (in der Übergangsliste „▶ anhören“, dann im Export gegenh�
 6. **Lautheit:** Springt die Lautstärke beim Wechsel? Pumpt der Limiter hörbar, vor allem in der ersten Hälfte, wenn beide Tracks laufen?
 7. **Klang nach dem Stretching:** Hörst du Artefakte (Phasing, verwaschene Hi-Hats, „metallische“ Stimmen)? Steht in der Track-Tabelle eine große Tempoänderung, besonders genau hinhören.
 8. **Klicks:** Knackser am Anfang und Ende von Tracks oder Übergängen?
-9. **Vorschau = Export:** Klingt die WAV genauso wie die Vorschau? (Die Gleichheitstests sollten das bestätigen.)
+9. **Vorschau = Export:** Klingt der Export genauso wie die Vorschau? (Die Gleichheitstests bestätigen das für das unkomprimierte Signal.) Bei der MP3 zusätzlich: Hörst du Kompressionsartefakte gegenüber der WAV?
 10. **Die zwei schwierigen Fälle:** Break am Anfang (wird das Intro/die Eins richtig erkannt?) und Tempowechsel (erscheint der Hinweis „Beat-Raster unsicher“, und wie klingt es trotzdem?).
+11. **Nachjustieren:** Lässt sich ein schlechter Übergang mit Verschieben, Länge, Stil oder „Set the one here“ retten? Was hast du geändert?
 
-Bitte pro Übergang kurz notieren: Nummer, Urteil (gut / geht so / schlecht) und was auffällt. Dazu die kopierten Messwerte (JSON) und welches Modell lief.
+Bitte pro Übergang kurz notieren: Nummer, Urteil (gut / geht so / schlecht) und was auffällt. Dazu die kopierten Messwerte (JSON, enthält auch das Rezept mit deinen Änderungen) und welches Modell lief.
 
 ## Bekannte Grenzen (bewusst außerhalb des Spikes)
 
-- Kein Editor (Out/In verschieben, Länge, „Set the one here“). Das Rezept kennt aber schon `gridShiftBeats` und Takt-Positionen; die Zeitleiste rechnet sie mit.
-- Nur ein Übergangsstil (Blend mit Bass swap). Kein Cut/Quick.
+- Kein grafischer Editor (Griffe auf der Timeline); die Bearbeitung läuft über Knöpfe in der Übergangsliste, aber über dieselben Engine-Funktionen.
 - Konstantes Tempo pro Track; Tracks mit Tempowechsel werden nur gemeldet.
-- Kein Analyse-Cache (IndexedDB) und kein OPFS: bei jedem Lauf wird neu analysiert.
-- Kein MP3-Export.
+- Kein OPFS: die gestreckten Puffer liegen im Arbeitsspeicher.
+- Die Reihenfolge der Tracks wird nicht automatisch optimiert (Reihenfolge = Ablage-Reihenfolge).

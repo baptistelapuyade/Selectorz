@@ -18,7 +18,8 @@ export async function measureMemory(): Promise<MemoryReading> {
   if (globalThis.crossOriginIsolated && perf.measureUserAgentSpecificMemory) {
     try {
       // kann bis zu ~20 s dauern (der Browser misst beim nächsten GC)
-      r.uaBytes = (await perf.measureUserAgentSpecificMemory()).bytes;
+      const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+      r.uaBytes = (await Promise.race([perf.measureUserAgentSpecificMemory(), timeout])).bytes;
     } catch {
       /* nicht verfügbar */
     }

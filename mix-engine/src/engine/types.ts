@@ -65,6 +65,8 @@ export interface TrackAnalysis {
   /** Integrierte Lautheit (BS.1770-Näherung, Mono, LUFS). */
   loudness: number;
   timings: AnalysisTimings;
+  /** true, wenn das Ergebnis aus dem lokalen Analyse-Cache stammt (Zeiten sind dann die des ersten Laufs). */
+  fromCache?: boolean;
 }
 
 export interface AnalysisTimings {
@@ -79,7 +81,8 @@ export interface AnalysisTimings {
 // ───────────────────────── Rezept (das, was der Server später speichert) ─────────────────────────
 
 export type MasterTempoMode = 'first' | 'median' | 'minimax';
-export type TransitionStyle = 'blend';
+/** blend: lange Blende mit Bass swap · quick: je ein Takt Ein-/Ausblenden um den Swap · cut: harter Wechsel auf der Eins. */
+export type TransitionStyle = 'blend' | 'quick' | 'cut';
 
 export interface RecipeTrack {
   id: string;
@@ -103,6 +106,8 @@ export interface RecipeTransition {
   bars: number;
   /** Bass swap nach so vielen Takten ab Übergangsbeginn (Standard: Mitte). */
   bassSwapBar: number;
+  /** Bass swap über das Low-Shelf (bei „cut“ ohne Wirkung). */
+  bassSwap: boolean;
   style: TransitionStyle;
   /** true, wenn eine Person den Übergang verändert hat (für später). */
   edited: boolean;
@@ -149,7 +154,10 @@ export interface TimelineTransition {
   outBar: number;
   inBar: number;
   bars: number;
+  style: TransitionStyle;
+  bassSwapOn: boolean;
   start: number;
+  /** Zeitpunkt des Wechsels (Bass swap bzw. Schnitt). */
   bassSwap: number;
   end: number;
 }
