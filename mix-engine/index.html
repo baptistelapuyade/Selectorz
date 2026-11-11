@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Selectorz Automix – Spike</title>
+    <style>
+      body { font: 14px/1.45 system-ui, sans-serif; margin: 24px; max-width: 1280px; color: #111; }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      h2 { font-size: 15px; margin: 28px 0 8px; border-top: 1px solid #ccc; padding-top: 12px; }
+      table { border-collapse: collapse; font-variant-numeric: tabular-nums; margin: 6px 0; }
+      th, td { border: 1px solid #ddd; padding: 3px 7px; text-align: left; white-space: nowrap; }
+      th { background: #f4f4f4; font-weight: 600; }
+      td.num { text-align: right; }
+      .muted { color: #666; }
+      .warn { color: #a40; }
+      .err { color: #b00; white-space: pre-wrap; }
+      #drop { border: 2px dashed #999; padding: 20px; text-align: center; margin: 8px 0; }
+      #drop.over { background: #eef; }
+      button { margin: 2px 4px 2px 0; }
+      label { margin-right: 14px; }
+      pre { background: #f6f6f6; padding: 10px; max-height: 420px; overflow: auto; font-size: 12px; }
+      .row { margin: 6px 0; }
+      progress { width: 260px; vertical-align: middle; }
+    </style>
+  </head>
+  <body>
+    <h1>Selectorz Automix – Spike</h1>
+    <div class="muted">Alles läuft lokal im Browser. Keine Audiodaten verlassen diesen Rechner.</div>
+    <div id="env" class="muted row"></div>
+
+    <h2>1 · Dateien</h2>
+    <div id="drop">Audiodateien hier ablegen (MP3, WAV, AIFF, FLAC, M4A) oder <input id="files" type="file" multiple accept=".mp3,.wav,.aif,.aiff,.flac,.m4a,.aac,.ogg,audio/*" /></div>
+    <div class="muted">Reihenfolge = Reihenfolge im Mix (beim Ablegen nach Dateiname sortiert, mit ↑ ↓ änderbar).</div>
+    <table id="fileTable"></table>
+
+    <h2>2 · Einstellungen</h2>
+    <div class="row">
+      <label>Modell
+        <select id="model"><option value="small">klein (small0)</option><option value="large">groß (final0)</option></select></label>
+      <label><input id="compare" type="checkbox" /> zusätzlich mit dem anderen Modell vergleichen</label>
+      <label>Ausführung
+        <select id="ep"><option value="auto">auto (WebGPU → WASM)</option><option value="webgpu">WebGPU</option><option value="wasm">WASM</option></select></label>
+    </div>
+    <div class="row">
+      <label>Master-Tempo
+        <select id="tempo"><option value="median">Median</option><option value="first">Track 1</option><option value="minimax">kleinste max. Streckung</option></select></label>
+      <label>Übergangslänge
+        <select id="bars"><option value="auto">auto (16/32)</option><option value="16">16 Takte</option><option value="32">32 Takte</option><option value="8">8 Takte</option><option value="64">64 Takte</option></select></label>
+    </div>
+    <div class="row">
+      <button id="run">Analysieren und mixen</button>
+      <button id="replan" disabled>Neu planen (Einstellungen übernehmen)</button>
+      <span id="status" class="muted"></span>
+    </div>
+    <div id="errors" class="err"></div>
+
+    <h2>3 · Analyse</h2>
+    <table id="analysisTable"></table>
+    <table id="compareTable"></table>
+
+    <h2>4 · Mix</h2>
+    <div id="mixSummary"></div>
+    <ul id="warnings" class="warn"></ul>
+    <table id="transitionTable"></table>
+    <table id="trackTable"></table>
+    <div class="row">
+      <button id="toggleRecipe" disabled>Rezept (JSON) anzeigen</button>
+      <button id="copyRecipe" disabled>Rezept kopieren</button>
+    </div>
+    <pre id="recipe" hidden></pre>
+
+    <h2>5 · Vorschau</h2>
+    <div class="row">
+      <button id="play" disabled>▶ Von vorn</button>
+      <button id="stop" disabled>■ Stopp</button>
+      <label>ab <input id="seek" type="number" min="0" step="1" value="0" style="width: 70px" /> s</label>
+      <button id="playFrom" disabled>▶ Ab Position</button>
+      <span id="pos" class="muted"></span>
+    </div>
+
+    <h2>6 · Export</h2>
+    <div class="row">
+      <button id="export" disabled>WAV exportieren</button>
+      <progress id="exportProgress" value="0" max="1" hidden></progress>
+      <span id="exportInfo"></span>
+    </div>
+
+    <h2>7 · Gleichheitstests (Vorschau = Export)</h2>
+    <div class="row">
+      <button id="eqSections" disabled>Abschnitte vs. am Stück</button>
+      <button id="eqLive" disabled>Live-Vorschau vs. Export</button>
+      <span class="muted">jeweils um den ersten Übergang</span>
+    </div>
+    <div id="eqResult"></div>
+
+    <h2>8 · Messwerte</h2>
+    <div class="row">
+      <button id="measureMem">Speicher jetzt messen</button>
+      <button id="copyMetrics">Messwerte kopieren (JSON, ohne Audio)</button>
+    </div>
+    <table id="metricsTable"></table>
+
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
+</html>
