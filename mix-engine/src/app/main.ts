@@ -99,6 +99,7 @@ let idCounter = 0;
 const metrics: {
   analysisWallMs?: number;
   prepareWallMs?: number;
+  stretchWorkers?: number;
   totalWallMs?: number;
   render?: { format: string; ms: number; totalMs: number; sections: number; realtimeFactor: number; peak: number; clippedSamples: number; peakSectionMB: number; fileMB: number };
   memory?: { audioBuffersMB: number; browserMB?: number; jsHeapMB?: number; source: string; at: string }[];
@@ -236,6 +237,9 @@ async function analyzeAll(): Promise<void> {
     renderAnalysis();
   }
   metrics.analysisWallMs = performance.now() - t;
+  // Modell-Sitzungen (WASM-Speicher von ONNX Runtime) freigeben; bei Bedarf neu laden
+  analyzer.dispose();
+  analyzer = null;
 }
 
 // ───────────── Planen ─────────────
@@ -352,6 +356,10 @@ async function prepare() {
   media = res.media;
   prepStats = res.stats;
   metrics.prepareWallMs = performance.now() - t;
+  // Stretch-Worker freigeben (WASM-Heaps wachsen und schrumpfen nicht); bei Bedarf neu starten
+  metrics.stretchWorkers = pool.size;
+  pool.dispose();
+  pool = null;
   renderMixInfo();
 }
 
@@ -536,7 +544,7 @@ function renderMetrics() {
   for (const a of analyses) rows.push([`Analyse: ${a.title}`, `${ms(a.timings.decodeMs)} dekodieren + ${ms(a.timings.totalMs)} Analyse (davon Inferenz ${ms(a.timings.inferenceMs)})`]);
   if (metrics.analysisWallMs !== undefined) rows.push(['Analyse gesamt (Wanduhr, inkl. Modell laden)', `${(metrics.analysisWallMs / 1000).toFixed(1)} s`]);
   for (const p of prepStats) rows.push([`Strecken: ${analyses.find((a) => a.id === p.id)?.title}`, p.reused ? 'wiederverwendet' : `${ms(p.decodeMs)} dekodieren + ${ms(p.stretchMs)} strecken, ${p.coveredSeconds.toFixed(0)} s Puffer, ${mb(p.bytes)}`]);
-  if (metrics.prepareWallMs !== undefined) rows.push(['Strecken gesamt (Wanduhr)', `${(metrics.prepareWallMs / 1000).toFixed(1)} s (${pool?.size ?? 0} Worker parallel)`]);
+  if (metrics.prepareWallMs !== undefined) rows.push(['Strecken gesamt (Wanduhr)', `${(metrics.prepareWallMs / 1000).toFixed(1)} s (${metrics.stretchWorkers ?? 0} Worker parallel)`]);
   if (metrics.totalWallMs !== undefined) rows.push(['Ablegen bis hörbar (Analyse + Planung + Strecken)', `${(metrics.totalWallMs / 1000).toFixed(1)} s`]);
   if (metrics.render) {
     const r = metrics.render;

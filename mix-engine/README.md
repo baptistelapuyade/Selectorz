@@ -125,6 +125,10 @@ Vor der Übergabe lief der Spike in der Entwicklungsumgebung (headless Chrome, 2
 | MP3 gegen WAV | gleich bis auf die übliche Encoder-Verzögerung von 1105 Samples (25 ms) am Anfang; für die Tracklist bedeutungslos |
 | Übergänge bearbeiten | Verschieben, Länge, Stil, Bass swap und „Set the one here“ greifen ohne neues Stretching; Gleichheitstests danach weiter bitgenau; ungültige Änderungen werden mit Grund abgelehnt |
 | Analyse-Cache | zweiter Lauf mit denselben 2 Tracks: 9 s statt 2 min |
+| Lange Tracks (6 × ca. 6,7 min, 35-min-Mix) | Analyse ca. 115 s pro Track (WASM, großes Modell, 2 Kerne); Strecken ca. 10 s pro Track; MP3-Export 44 s; Versatz im Übergang ≤ 2 ms; automatisch 32-Takt-Übergänge |
+| Speicher lange Tracks | gestreckte Puffer 814 MB (≈ 136 MB pro Track, weil Ein- und Ausstieg fast den ganzen Track umfassen); alle Chrome-Prozesse zusammen ca. 2,3–2,5 GB (RSS, inkl. Browser und GPU-Prozess) |
+
+Nach Analyse und Strecken werden die Worker beendet, damit der WASM-Speicher von ONNX Runtime und Signalsmith frei wird; bei Bedarf starten sie neu. Größter weiterer Hebel für Phase E: gestreckte Puffer als 16-Bit-Ganzzahlen halten und Abschnitte erst beim Abspielen/Rendern in AudioBuffer umwandeln (halbiert die 814 MB).
 | Speicher | ca. 64 MB gestreckter Puffer pro 3-Minuten-Track; Browser gesamt ca. 0,8–0,9 GB bei 2–3 Tracks |
 
 Die Feinjustierung („Feinjustierung“ in der Analyse-Tabelle) richtet das Raster nach Beat This! an den Kick-Einsätzen aus. Ohne sie lag der Versatz im Übergang bei rund 7,5 ms, weil das Modell je nach Material einige Millisekunden früher oder später markiert.
