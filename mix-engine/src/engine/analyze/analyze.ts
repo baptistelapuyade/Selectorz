@@ -2,7 +2,7 @@
 import type { AnalysisTimings, TrackAnalysis } from '../types';
 import { inferLogits, type LoadedModel } from './beatthis';
 import { extractFeatures, SAMPLE_RATE } from './features';
-import { applyPhaseShift, barEnergies, detectSections, fitGrid, medianBpm, phraseOffset, refinePhase } from './grid';
+import { applyPhaseShift, barEnergies, chooseBarPhase, detectSections, fitGrid, medianBpm, phraseOffset, refinePhase } from './grid';
 import { integratedLoudness } from './loudness';
 import { postprocess } from './postprocess';
 
@@ -33,12 +33,7 @@ export async function analyzeTrack(
 
   const { beats, downbeats } = postprocess(logits.beat, logits.downbeat);
   const rough = fitGrid(beats, downbeats, duration);
-  const grid = rough
-    ? applyPhaseShift(rough, refinePhase(input.pcm, SAMPLE_RATE, rough), duration)
-    : { t0: 0, period: 0.5, beatsPerBar: 4 as const, barCount: Math.floor(duration / 2), residualMs: NaN, inlierShare: 0, downbeatConfidence: 0, phaseShiftMs: 0 };
-  const bars = barEnergies(grid, feats.low, feats.mid, feats.high);
-  const offset = phraseOffset(bars, PHRASE_BARS);
-  const sections = detectSections(bars, offset, PHRASE_BARS);
+  const fineShift = rough ? refinePhase(input.pcm, SAMPLE_RATE, rough) : 0;
   const t3 = performance.now();
 
   const timings: AnalysisTimings = {
@@ -49,7 +44,7 @@ export async function analyzeTrack(
     totalMs: t3 - t0,
     modelLoadMs: 0,
   };
-  return {
+  return deriveAnalysis({
     id: input.id,
     title: input.title,
     duration,
@@ -57,15 +52,46 @@ export async function analyzeTrack(
     executionProvider: model.ep,
     beats,
     downbeats,
+    loudness,
+    timings,
+    raw: { low: feats.low, mid: feats.mid, high: feats.high, fineShift },
+  });
+}
+
+export type RawAnalysis = Pick<
+  TrackAnalysis,
+  'id' | 'title' | 'duration' | 'model' | 'executionProvider' | 'beats' | 'downbeats' | 'loudness' | 'timings' | 'fromCache'
+> & { raw: NonNullable<TrackAnalysis['raw']> };
+
+/**
+ * Alles, was nach der Inferenz kommt (Raster, Eins, Phrasen, Intro/Outro), als reine
+ * Funktion. Läuft im Worker und erneut beim Laden aus dem Cache, damit Verbesserungen an
+ * diesen Schritten ohne neue Inferenz greifen.
+ */
+export function deriveAnalysis(r: RawAnalysis): TrackAnalysis {
+  const { low, mid, high, fineShift } = r.raw;
+  const rough = fitGrid(r.beats, r.downbeats, r.duration);
+  let grid = rough
+    ? applyPhaseShift(rough, fineShift, r.duration)
+    : { t0: 0, period: 0.5, beatsPerBar: 4 as const, barCount: Math.floor(r.duration / 2), residualMs: NaN, inlierShare: 0, downbeatConfidence: 0, phaseShiftMs: 0 };
+  let barPhaseSource: TrackAnalysis['barPhaseSource'] = 'model';
+  if (rough) {
+    const c = chooseBarPhase(grid, low, mid, high, r.duration);
+    if (c.changed) { grid = c.grid; barPhaseSource = 'phrases'; }
+  }
+  const bars = barEnergies(grid, low, mid, high);
+  const offset = phraseOffset(bars, PHRASE_BARS);
+  const sections = detectSections(bars, offset, PHRASE_BARS);
+  return {
+    ...r,
     bpm: 60 / grid.period,
-    bpmMedian: beats.length > 1 ? medianBpm(beats) : NaN,
+    bpmMedian: r.beats.length > 1 ? medianBpm(r.beats) : NaN,
     grid,
+    barPhaseSource,
     phraseBars: PHRASE_BARS,
     phraseOffset: offset,
     bars,
     ...sections,
-    loudness,
-    timings,
   };
 }
 

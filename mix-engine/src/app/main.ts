@@ -42,6 +42,7 @@ import {
   getCachedAnalysis,
   putCachedAnalysis,
   clearAnalysisCache,
+  deriveAnalysis,
 } from '../engine';
 
 // ───────────── Helfer ─────────────
@@ -167,11 +168,11 @@ function planOptions(): Partial<PlanOptions> {
 function renderAnalysis() {
   table(
     $('analysisTable'),
-    ['Track', 'Dauer', 'Dekodieren', 'Merkmale', 'Inferenz', 'Analyse gesamt', 'Modell laden', 'Modell/EP', 'BPM (Raster)', 'BPM (Median)', 'Raster-Abw.', 'Feinjustierung', 'passende Beats', 'erster Schlag', 'Takte', 'Phrasen-Versatz', 'Intro bis Takt', 'Outro ab Takt', 'Lautheit'],
+    ['Track', 'Dauer', 'Dekodieren', 'Merkmale', 'Inferenz', 'Analyse gesamt', 'Modell laden', 'Modell/EP', 'BPM (Raster)', 'BPM (Median)', 'Raster-Abw.', 'Feinjustierung', 'passende Beats', 'erster Schlag', 'Takte', 'Eins aus', 'Phrasen-Versatz', 'Intro bis Takt', 'Outro ab Takt', 'Lautheit'],
     analyses.map((a) => [
       a.title + (a.fromCache ? ' (Cache)' : ''), fmtTime(a.duration), ms(a.timings.decodeMs), ms(a.timings.featuresMs), ms(a.timings.inferenceMs), ms(a.timings.totalMs),
       a.timings.modelLoadMs ? ms(a.timings.modelLoadMs) : '–', `${a.model}/${a.executionProvider}`, n2(a.bpm), n2(a.bpmMedian),
-      `${a.grid.residualMs.toFixed(1)} ms`, `${a.grid.phaseShiftMs > 0 ? '+' : ''}${a.grid.phaseShiftMs.toFixed(1)} ms`, pct(a.grid.inlierShare), pct(a.grid.downbeatConfidence), a.grid.barCount, a.phraseOffset,
+      `${a.grid.residualMs.toFixed(1)} ms`, `${a.grid.phaseShiftMs > 0 ? '+' : ''}${a.grid.phaseShiftMs.toFixed(1)} ms`, pct(a.grid.inlierShare), pct(a.grid.downbeatConfidence), a.grid.barCount, a.barPhaseSource === 'phrases' ? 'Phrasen' : 'Modell', a.phraseOffset,
       `${a.introEndBar} (${a.introSource})`, `${a.outroStartBar} (${a.outroSource})`, `${a.loudness.toFixed(1)} LUFS`,
     ]),
   );
@@ -201,8 +202,10 @@ async function analyzeAll(): Promise<void> {
       const hit = await getCachedAnalysis(key);
       const hitOther = compare ? await getCachedAnalysis(keyOther) : undefined;
       if (hit && (!compare || hitOther)) {
-        analyses.push({ ...hit, id: it.id, title: it.title, fromCache: true });
-        if (hitOther) others.set(it.id, { ...hitOther, id: it.id, title: it.title, fromCache: true });
+        // Nachgelagerte Schritte (Raster, Eins, Phrasen) neu ableiten, ohne Inferenz
+        const fresh = (x: TrackAnalysis) => (x.raw ? deriveAnalysis({ ...x, raw: x.raw }) : x);
+        analyses.push({ ...fresh(hit), id: it.id, title: it.title, fromCache: true });
+        if (hitOther) others.set(it.id, { ...fresh(hitOther), id: it.id, title: it.title, fromCache: true });
         renderAnalysis();
         continue;
       }
@@ -519,7 +522,7 @@ function metricsJson() {
       decodeMs: Math.round(a.timings.decodeMs), featuresMs: Math.round(a.timings.featuresMs), inferenceMs: Math.round(a.timings.inferenceMs),
       analysisMs: Math.round(a.timings.totalMs), modelLoadMs: Math.round(a.timings.modelLoadMs), fromCache: !!a.fromCache,
       bpm: +a.bpm.toFixed(3), bpmMedian: +a.bpmMedian.toFixed(2), gridResidualMs: +a.grid.residualMs.toFixed(1), phaseShiftMs: +a.grid.phaseShiftMs.toFixed(1), inlierShare: +a.grid.inlierShare.toFixed(3),
-      downbeatConfidence: +a.grid.downbeatConfidence.toFixed(2), bars: a.grid.barCount, phraseOffset: a.phraseOffset,
+      downbeatConfidence: +a.grid.downbeatConfidence.toFixed(2), barPhaseSource: a.barPhaseSource, bars: a.grid.barCount, phraseOffset: a.phraseOffset,
       introEndBar: a.introEndBar, introSource: a.introSource, outroStartBar: a.outroStartBar, outroSource: a.outroSource, loudness: +a.loudness.toFixed(1),
       compare: others.has(a.id) ? { model: others.get(a.id)!.model, inferenceMs: Math.round(others.get(a.id)!.timings.inferenceMs), bpm: +others.get(a.id)!.bpm.toFixed(3), ...compareAnalyses(a, others.get(a.id)!) } : undefined,
       stretch: prepStats.find((p) => p.id === a.id),

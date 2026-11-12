@@ -1,6 +1,6 @@
 // Gemeinsame Typen der Mix-Engine. UI-unabhängig.
 
-export const ENGINE_VERSION = 'selectorz-mix-engine@0.1.0-spike';
+export const ENGINE_VERSION = 'selectorz-mix-engine@0.1.1-spike';
 
 /** PCM, kanalweise (nicht interleaved). */
 export interface Pcm {
@@ -65,6 +65,10 @@ export interface TrackAnalysis {
   /** Integrierte Lautheit (BS.1770-Näherung, Mono, LUFS). */
   loudness: number;
   timings: AnalysisTimings;
+  /** Woher die „Eins“ stammt: Downbeats des Modells oder Korrektur über die Phrasen. */
+  barPhaseSource: 'model' | 'phrases';
+  /** Rohdaten für die erneute Ableitung ohne Inferenz (Bandleistung je Frame, Feinjustierung in s). */
+  raw?: { low: Float32Array; mid: Float32Array; high: Float32Array; fineShift: number };
   /** true, wenn das Ergebnis aus dem lokalen Analyse-Cache stammt (Zeiten sind dann die des ersten Laufs). */
   fromCache?: boolean;
 }

@@ -3,7 +3,7 @@ export * from './types';
 export { decodeFile, toMono, toStereo, SUPPORTED, DecodeError } from './decode/decode';
 export { parseAiff, isAiff } from './decode/aiff';
 export { Analyzer } from './analyze/client';
-export { compareAnalyses } from './analyze/analyze';
+export { compareAnalyses, deriveAnalysis, type RawAnalysis } from './analyze/analyze';
 export { SAMPLE_RATE as ANALYSIS_SAMPLE_RATE } from './analyze/features';
 export { plan, masterTempo, phraseStarts, DEFAULT_PLAN_OPTIONS, type PlanOptions, type PlanTrack } from './plan/plan';
 export { resolveTimeline, evalEnvelope, mixTimeOfBar } from './plan/timeline';

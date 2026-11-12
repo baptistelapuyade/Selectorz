@@ -218,39 +218,54 @@ export interface Sections {
   outroSource: 'energy' | 'bass' | 'default';
 }
 
+function medianOf(xs: number[], from: number, to: number): number {
+  const a = xs.slice(Math.max(0, from), Math.min(xs.length, to)).sort((x, y) => x - y);
+  if (!a.length) return NaN;
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+
 /**
- * Intro endet am ersten großen Energiesprung (oder wenn der Bass voll einsetzt),
- * Outro beginnt am letzten großen Energieabfall (oder wenn der Bass geht).
- * Alles auf Phrasengrenzen.
+ * Intro: ein ruhigerer Anfang (weniger Gesamtenergie, Mitten oder Bass als der Track
+ * sonst hat), der an einer Phrasengrenze in den vollen Track springt. Gesucht wird nur in
+ * den ersten 64 Takten. Viele Club-Tracks starten mit voller Energie; dann gibt es kein
+ * Intro, und der Einstieg liegt am Anfang (`default`).
+ * Outro: die ruhigere Strecke am Ende, ab einem Energieabfall an einer Phrasengrenze.
+ * Ein kurzer Break mitten im Track zählt nicht, weil danach wieder alles voll ist.
  */
 export function detectSections(bars: BarEnergy[], offset: number, phraseBars = 8): Sections {
   const n = bars.length;
   const tot = bars.map(total);
   const low = bars.map((b) => b.low);
   const mid = bars.map((b) => b.mid);
+  const fullTot = medianOf(tot, 0, n);
+  const fullMid = medianOf(mid, 0, n);
   const sortedLow = [...low].sort((a, b) => a - b);
   const fullLow = sortedLow[Math.floor(sortedLow.length * 0.8)] ?? 0;
   const starts: number[] = [];
   for (let p = offset; p < n; p += phraseBars) starts.push(p);
   const P = phraseBars;
+  const quiet = (from: number, to: number) =>
+    fullTot - medianOf(tot, from, to) >= 3 || fullMid - medianOf(mid, from, to) >= 6 || fullLow - medianOf(low, from, to) >= 6;
 
   let introEndBar = -1;
   let introSource: Sections['introSource'] = 'default';
   for (const p of starts) {
-    if (p < P || p > 0.45 * n) continue;
+    if (p < P || p > Math.min(64, 0.4 * n)) continue;
+    if (!quiet(0, p)) continue;
     const jump = Math.max(meanOf(tot, p, p + P) - meanOf(tot, p - P, p), meanOf(mid, p, p + P) - meanOf(mid, p - P, p));
     const lowJump = meanOf(low, p, p + P) - meanOf(low, p - P, p);
     const bassIn = lowJump >= 3 || (meanOf(low, p - P, p) < fullLow - 6 && meanOf(low, p, p + P) >= fullLow - 3);
     if (jump >= 3) { introEndBar = p; introSource = 'energy'; break; }
     if (bassIn) { introEndBar = p; introSource = 'bass'; break; }
   }
-  if (introEndBar < 0) introEndBar = starts.find((p) => p >= 16) ?? Math.min(16, n);
+  if (introEndBar < 0) introEndBar = starts[0] ?? 0;
 
   let outroStartBar = -1;
   let outroSource: Sections['outroSource'] = 'default';
-  for (let i = starts.length - 1; i >= 0; i--) {
-    const p = starts[i];
-    if (p > n - 16 || p < 0.55 * n) continue;
+  for (const p of starts) {
+    if (p > n - 16 || p < 0.6 * n) continue;
+    if (!quiet(p, n)) continue;
     const drop = Math.max(meanOf(tot, p - P, p) - meanOf(tot, p, p + P), meanOf(mid, p - P, p) - meanOf(mid, p, p + P));
     const lowDrop = meanOf(low, p - P, p) - meanOf(low, p, p + P);
     const bassOut = lowDrop >= 3 || (meanOf(low, p - P, p) >= fullLow - 3 && meanOf(low, p, p + P) < fullLow - 6);
@@ -262,4 +277,65 @@ export function detectSections(bars: BarEnergy[], offset: number, phraseBars = 8
     outroStartBar = cands.length ? cands[cands.length - 1] : Math.max(0, n - 16);
   }
   return { introEndBar, outroStartBar, introSource, outroSource };
+}
+
+/** Energie pro Beat in drei Bändern (dB), ab dem frühesten Rasterbeat >= 0. */
+function beatEnergies(t0: number, period: number, low: Float32Array, mid: Float32Array, high: Float32Array) {
+  const first = t0 - Math.floor(t0 / period) * period;
+  const nb = Math.max(0, Math.floor((low.length / FPS - first) / period) - 1);
+  const e = [new Float64Array(nb), new Float64Array(nb), new Float64Array(nb)];
+  for (let j = 0; j < nb; j++) {
+    const f0 = Math.round((first + j * period) * FPS);
+    const f1 = Math.max(f0 + 1, Math.round((first + (j + 1) * period) * FPS));
+    let l = 0, m = 0, h = 0;
+    for (let f = f0; f < f1; f++) { l += low[f]; m += mid[f]; h += high[f]; }
+    const c = f1 - f0;
+    e[0][j] = dB(l / c); e[1][j] = dB(m / c); e[2][j] = dB(h / c);
+  }
+  return { first, e, nb };
+}
+
+/** Wie viele der 12 stärksten Energiewechsel auf Phrasengrenzen liegen (je Versatz 0–7). */
+function phraseAlignment(e: Float64Array[], nb: number, phase: number, phraseBars = 8): number[] {
+  const nbar = Math.floor((nb - phase) / 4);
+  const bar = (k: number, band: number) => {
+    let s = 0;
+    for (let j = 0; j < 4; j++) s += e[band][phase + 4 * k + j];
+    return s / 4;
+  };
+  const nov: Array<[number, number]> = [];
+  for (let k = 1; k < nbar; k++) {
+    let v = 0;
+    for (let band = 0; band < 3; band++) v += Math.abs(bar(k, band) - bar(k - 1, band));
+    nov.push([v, k]);
+  }
+  nov.sort((a, b) => b[0] - a[0]);
+  const counts = new Array(phraseBars).fill(0);
+  for (const [, k] of nov.slice(0, 12)) counts[k % phraseBars]++;
+  return counts;
+}
+
+/**
+ * Prüft die „Eins“: Beat This! verwechselt bei manchen Tracks die Takthälften (Eins auf
+ * Beat 3). Club-Tracks beginnen fast immer mit der Eins, und ihre großen Energiewechsel
+ * liegen auf 8-Takt-Grenzen. Wenn das Raster ab dem ersten Beat deutlich besser zu den
+ * Phrasen passt als das Raster des Modells, nehmen wir den ersten Beat als Eins.
+ */
+export function chooseBarPhase(
+  grid: BeatGrid,
+  low: Float32Array,
+  mid: Float32Array,
+  high: Float32Array,
+  duration: number,
+): { grid: BeatGrid; changed: boolean } {
+  const { first, e, nb } = beatEnergies(grid.t0, grid.period, low, mid, high);
+  const model = Math.round((grid.t0 - first) / grid.period) % 4;
+  if (model === 0 || nb < 64) return { grid, changed: false };
+  const atStart = phraseAlignment(e, nb, 0)[0];
+  const modelBest = Math.max(...phraseAlignment(e, nb, model));
+  if (atStart >= 6 && atStart >= modelBest + 2) {
+    const barCount = Math.max(0, Math.floor((duration - first) / (4 * grid.period) + 1e-6));
+    return { grid: { ...grid, t0: first, barCount }, changed: true };
+  }
+  return { grid, changed: false };
 }

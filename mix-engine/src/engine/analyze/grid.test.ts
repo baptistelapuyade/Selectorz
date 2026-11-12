@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BarEnergy } from '../types';
-import { barTime, detectSections, fitGrid, phraseOffset, refinePhase } from './grid';
+import { barTime, chooseBarPhase, detectSections, fitGrid, phraseOffset, refinePhase } from './grid';
+import { FPS } from './features';
 import { peakFrames, postprocess } from './postprocess';
 
 /** Beats wie aus Beat This!: auf 20-ms-Frames gerundet, mit Störungen. */
@@ -89,6 +90,16 @@ describe('Phrasen und Abschnitte', () => {
     expect(s.introSource).toBe('energy');
   });
 
+  it('Track mit voller Energie ab Takt 0: kein Intro, kein Outro-Fehlalarm durch einen Break', () => {
+    const bars: BarEnergy[] = [];
+    for (let b = 0; b < 160; b++) bars.push(b >= 64 && b < 80 ? bar(-15, -25, -20) : bar(-5, -8, -15));
+    const s = detectSections(bars, 0);
+    expect(s.introEndBar).toBe(0);
+    expect(s.introSource).toBe('default');
+    expect(s.outroSource).toBe('default');
+    expect(s.outroStartBar).toBe(128);
+  });
+
   it('Phrasenversatz folgt den Energiewechseln', () => {
     const bars: BarEnergy[] = [];
     for (let b = 0; b < 100; b++) bars.push(Math.floor((b - 4) / 8) % 2 ? bar(-5, -8, -15) : bar(-12, -20, -25));
@@ -110,5 +121,35 @@ describe('postprocess (minimal, wie Beat This!)', () => {
     const r = postprocess(beat, down);
     expect(r.beats).toEqual([0.2, 0.81]);
     expect(r.downbeats).toEqual([0.2]);
+  });
+});
+
+describe('chooseBarPhase', () => {
+  /** Frame-Energien: alle 8 Takte ab Beat 0 wechselt die Energie (Phrasen ab Trackbeginn). */
+  function frames(bpm: number, bars: number) {
+    const p = 60 / bpm;
+    const n = Math.ceil(bars * 4 * p * FPS) + 10;
+    const low = new Float32Array(n), mid = new Float32Array(n), high = new Float32Array(n);
+    for (let f = 0; f < n; f++) {
+      const t = f / FPS;
+      const barIdx = Math.floor(t / (4 * p));
+      const loud = Math.floor(barIdx / 8) % 2 === 0;
+      const beatPos = (t / p) % 1;
+      const kick = beatPos < 0.2 ? 4 : 1;
+      low[f] = (loud ? 1 : 0.1) * kick; mid[f] = loud ? 1 : 0.05; high[f] = loud ? 0.5 : 0.2;
+    }
+    return { low, mid, high, duration: n / FPS, p };
+  }
+  it('korrigiert eine um zwei Beats versetzte Eins, wenn die Phrasen ab Beat 0 liegen', () => {
+    const { low, mid, high, duration, p } = frames(125, 160);
+    const grid = { t0: 2 * p, period: p, beatsPerBar: 4 as const, barCount: 150, residualMs: 3, inlierShare: 1, downbeatConfidence: 0.55, phaseShiftMs: 0 };
+    const r = chooseBarPhase(grid, low, mid, high, duration);
+    expect(r.changed).toBe(true);
+    expect(r.grid.t0).toBeCloseTo(0, 6);
+  });
+  it('lässt eine passende Eins unverändert', () => {
+    const { low, mid, high, duration, p } = frames(125, 160);
+    const grid = { t0: 0, period: p, beatsPerBar: 4 as const, barCount: 150, residualMs: 3, inlierShare: 1, downbeatConfidence: 0.9, phaseShiftMs: 0 };
+    expect(chooseBarPhase(grid, low, mid, high, duration).changed).toBe(false);
   });
 });

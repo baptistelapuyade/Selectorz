@@ -58,6 +58,8 @@ Tipp: Nummeriere die Dateien (`01_…`, `02_…`). Beim Ablegen wird nach Datein
 8. **Gleichheitstests**: prüfen, dass Vorschau und Export dasselbe ausgeben (Plan 3.4).
 9. **Messwerte**: „Messwerte kopieren“ legt alle Zahlen als JSON in die Zwischenablage (ohne Audio, nur Titel und Zahlen). Das bitte nach dem Hörtest mitschicken.
 
+Der Cache speichert die Rohdaten der Analyse (Beats, Bandenergie je Frame). Raster, Eins, Phrasen und Intro/Outro werden beim Laden neu abgeleitet; Verbesserungen an diesen Schritten greifen also ohne neue Inferenz.
+
 Master-Tempo und Übergangslänge lassen sich nach der Analyse ändern („Neu planen“). Neu gestreckt wird nur, wenn sich das Master-Tempo ändert oder ein Übergang aus dem gestreckten Bereich herausfällt.
 
 ## Was die Seite misst
@@ -69,8 +71,9 @@ Master-Tempo und Übergangslänge lassen sich nach der Analyse ändern („Neu p
 | BPM (Raster) / BPM (Median) | Raster: Regression über alle Beats (genau, das zählt). Median: wie in 3.3 beschrieben, nur zum Vergleich (auf 20-ms-Frames gerundet). |
 | Raster-Abw., passende Beats | Wie gut die Beats auf ein konstantes Raster passen. Unter ca. 10 ms und über 90 % ist gut; sonst Hinweis „Tempowechsel?“. |
 | Feinjustierung | Um wie viele ms das Raster an den Kick-Einsätzen nachgezogen wurde (max. ±25 ms). |
+| Eins aus | „Modell“ = Downbeats von Beat This!; „Phrasen“ = korrigiert, weil die großen Energiewechsel ab dem ersten Beat auf 8-Takt-Grenzen liegen (Beat This! verwechselt bei manchen Tracks die Takthälften). |
 | erster Schlag | Anteil der erkannten Downbeats, die zur gewählten „Eins“ passen. |
-| Intro bis / Outro ab | Phrasengrenzen; in Klammern, woraus sie abgeleitet sind (`energy`, `bass` oder `default` = keine klare Kante gefunden). |
+| Intro bis / Outro ab | Phrasengrenzen; in Klammern, woraus sie abgeleitet sind (`energy`, `bass` oder `default`). Als Intro zählt nur ein ruhigerer Anfang in den ersten 64 Takten; startet ein Track gleich voll, ist das Intro 0 und der Einstieg liegt am Anfang. Als Outro zählt nur eine ruhigere Strecke bis zum Ende; sonst liegt der Ausstieg in den letzten 32 Takten. |
 | Übergänge | Track raus/rein, Out-Takt, In-Takt, Länge in Takten und Sekunden, Bass swap, Position im Mix. |
 | Export | Format, Renderzeit und Gesamtzeit inkl. Kodieren, Echtzeitfaktor, Zahl der Abschnitte (30 s + 2 s Vorlauf), Spitzenpegel, übersteuerte Samples, Dateigröße. |
 | Speicher | Eigene Rechnung der gestreckten Puffer, dazu die Browser-Messung (`measureUserAgentSpecificMemory`, nur Chrome, kann bis zu 20 s dauern). |
