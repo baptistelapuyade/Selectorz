@@ -18,3 +18,4 @@ export { Mp3Writer } from './encode/mp3';
 export type { AudioSink } from './encode/sink';
 export { measureMemory, mb } from './memory';
 export { analysisKey, getCachedAnalysis, putCachedAnalysis, clearAnalysisCache } from './cache';
+export { memoryProfile, readDeviceHints, type MemoryProfile } from './memoryProfile';

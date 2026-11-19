@@ -6,6 +6,7 @@ import type { StretchedTrack } from './graph/mixGraph';
 import { covers } from './graph/mixGraph';
 import type { StretchPool } from './stretch/client';
 import type { Timeline, TrackAnalysis } from './types';
+import { memoryProfile } from './memoryProfile';
 
 export const MIX_SAMPLE_RATE = 44100;
 
@@ -33,7 +34,7 @@ export async function prepareStretched(
   const sr = MIX_SAMPLE_RATE;
   const media = new Map<string, StretchedTrack>();
   const stats: PrepareStats[] = [];
-  const marginBars = opts.marginBars ?? 32;
+  const marginBars = opts.marginBars ?? memoryProfile().marginBars;
   const jobs: Promise<void>[] = [];
   let inFlight = 0;
   const waiters: Array<() => void> = [];

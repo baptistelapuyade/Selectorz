@@ -1,4 +1,7 @@
-// Kleiner Pool von Stretch-Workern (parallel über Tracks).
+// Kleiner Pool von Stretch-Workern. Größe kommt aus dem Speicher-Profil (memory.ts):
+// standardmäßig 1, auf großzügigen Geräten 2. Mehr Parallelität spart kaum Zeit, verdoppelt
+// aber den Spitzenbedarf beim Laden.
+import { memoryProfile } from '../memoryProfile';
 import type { StretchRequest, StretchResponse } from './stretch.worker';
 
 interface Job {
@@ -15,7 +18,7 @@ export class StretchPool {
   private running = new Map<number, Job>();
   private nextId = 1;
 
-  constructor(size = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 2) - 1))) {
+  constructor(size = memoryProfile().stretchWorkers) {
     for (let i = 0; i < size; i++) {
       const w = new Worker(new URL('./stretch.worker.ts', import.meta.url), { type: 'module' });
       w.onmessage = (e: MessageEvent<StretchResponse>) => this.onMessage(w, e.data);

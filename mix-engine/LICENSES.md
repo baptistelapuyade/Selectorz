@@ -1,6 +1,6 @@
 # Lizenzen (Spike `mix-engine/`)
 
-Stand: 11.11.2026. Regel: nur MIT o. ä. permissive Lizenzen; keine GPL/AGPL.
+Stand: 19.11.2026 (zweite Prüfung, siehe Abschnitt „Zweite Prüfung“ unten; erste Fassung 11.11.2026). Regel: nur MIT o. ä. permissive Lizenzen; keine GPL/AGPL.
 
 ## Im Browser ausgeliefert
 
@@ -15,6 +15,7 @@ Stand: 11.11.2026. Regel: nur MIT o. ä. permissive Lizenzen; keine GPL/AGPL.
 | ↳ platform | 1.3.6 | MIT | Abhängigkeit |
 | [signalsmith-stretch](https://signalsmith-audio.co.uk/code/stretch/) (Geraint Luff) | 1.3.2 | MIT | Time-Stretching (WASM); die im Paket eingebettete WASM-Fabrik wird zur Build-Zeit unverändert herausgeschnitten (`vite.config.ts`) |
 | [wasm-media-encoders](https://github.com/arseneyr/wasm-media-encoders) (arseneyr) | 0.7.0 | MIT (JS-Teil) | Lädt und steuert den MP3-Encoder (`licenses/wasm-media-encoders-LICENSE`) |
+| ↳ @swc/helpers | 0.5.24 | Apache-2.0 | Abhängigkeit von wasm-media-encoders (kleine Hilfsfunktionen; im Build per Tree-Shaking weitgehend entfernt) |
 | ↳ `mp3.wasm`: [LAME](https://lame.sourceforge.io/) 3.100 | 3.100 | **LGPL 2 oder später** | MP3-Kodierung 320 kbps; siehe nächster Abschnitt |
 
 ## MP3-Encoder: Lizenzprüfung (Stand 11.11.2026)
@@ -55,3 +56,23 @@ Das Export-Skript `scripts/export_onnx.py` nutzt bei Bedarf `beat-this` (MIT), P
 
 - madmom (DBN-Postprocessing): per Vorgabe ausgeschlossen (die madmom-Modelle stehen unter CC BY-NC-SA). Beat This! läuft hier mit dem eigenen „minimal“-Postprocessing ohne DBN.
 - Essentia (AGPL), Rubber Band (GPL), SoundTouch-basierte Stretcher (LGPL).
+
+## Zweite Prüfung (19.11.2026, Stand Branch `spike/automix`)
+
+Geprüft: `package-lock.json`, `npm ls --omit=dev`, der Inhalt von `dist/` nach `npm run build`, `scripts/fetch-models.mjs`. Einschätzung, keine Rechtsberatung.
+
+**Ergebnis: Keine GPL/AGPL, keine NC-Lizenzen im ausgelieferten Code. Fünf Punkte sind vor dem Launch zu erledigen.**
+
+| # | Punkt | Status | Was zu tun ist |
+|---|---|---|---|
+| 1 | LAME bleibt eigene Datei | erfüllt | Im Build liegt `mp3-*.wasm` (ca. 133 KB) als eigenes Asset neben unserem Code, nicht eingebettet. So beibehalten; beim Umzug in die Next.js-App prüfen, dass der Bundler die Datei nicht inline einbettet. |
+| 2 | @swc/helpers fehlte in der Liste | ergänzt | Apache-2.0; Lizenztext gehört mit auf die Lizenzseite. |
+| 3 | ONNX Runtime enthält Fremdkomponenten | offen | Die WASM-Datei von onnxruntime-web enthält Teile weiterer Projekte (u. a. Eigen, Abseil, protobuf, XNNPACK). Microsoft listet sie in `ThirdPartyNotices.txt` im GitHub-Repository; das npm-Paket bringt die Datei nicht mit. Für das Produkt: die zur Version 1.31.1 passende Datei herunterladen und auf der Lizenzseite ausliefern. |
+| 4 | Herkunft der Modelle | offen | `final0` stammt aus einem Release von Johannes Gorset (MIT, Prüfsumme festgehalten). `small0` stammt aus inoffiziellen Hugging-Face-Spiegeln, beim ersten nur ohne Prüfsumme. Für das Produkt: beide Modelle selbst aus dem offiziellen Checkpoint exportieren (`scripts/export_onnx.py`), selbst hosten (gleiche Domain oder Supabase Storage), SHA-256 in `models.json` festschreiben. Lizenz bleibt MIT (Code und Gewichte, JKU Linz); Copyright-Hinweis mitliefern. |
+| 5 | Lizenzseite im Produkt | offen | Eine Seite (z. B. `/licenses`) mit: MIT-Texte (onnxruntime-web, signalsmith-stretch, wasm-media-encoders, Beat This!), BSD-3 (protobufjs), Apache-2.0 (flatbuffers, long, @swc/helpers), ISC (guid-typescript), ONNX-Runtime-ThirdPartyNotices, LAME-Hinweis mit Link auf lame.sourceforge.io und Quelltext (arseneyr/lame), LGPL-Text. Dazu die Schriften der App (Inter Tight, Geist Mono: beide SIL OFL 1.1). Nutzungsbedingungen dürfen das Ersetzen von `mp3.wasm` nicht verbieten. |
+
+Weitere Beobachtungen:
+
+- `@types/node` hängt als Abhängigkeit an protobufjs, enthält nur Typen und landet nicht im Build.
+- Größe: Die ONNX-Runtime-WASM ist 28,7 MB (7,3 MB gzip). Kein Lizenzthema, aber für die Ladezeit relevant (siehe Doc „Automix Leistung“).
+- Keine Test-Audiodateien im Repo (`test-audio/` und `public/models/` sind per `.gitignore` ausgeschlossen; geprüft mit `git ls-files`), keine Modelle im Repo.
