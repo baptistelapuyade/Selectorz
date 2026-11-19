@@ -7,6 +7,7 @@ export function SiteFooter() {
       <span className="font-extrabold text-ink">Selectorz</span>
       <span className="label-mono">Alpha</span>
       <nav className="ml-auto flex gap-5">
+        <Link href="/privacy" className="hover:text-ink hover:underline">Privacy</Link>
         <Link href="/imprint" className="hover:text-ink hover:underline">Imprint</Link>
       </nav>
     </footer>

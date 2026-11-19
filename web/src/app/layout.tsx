@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SiteFooter } from "@/components/site-footer";
+import { AlphaBar } from "@/components/alpha-bar";
+import { Analytics } from "@/components/analytics";
 
 // Schriften selbst ausgeliefert (Fontsource, SIL OFL 1.1); keine Anfrage an Google im Browser.
 const interTight = localFont({
@@ -36,8 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${interTight.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <AlphaBar />
         {children}
         <SiteFooter />
+        <Analytics />
       </body>
     </html>
   );

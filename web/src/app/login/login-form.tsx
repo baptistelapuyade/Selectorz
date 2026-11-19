@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { sendCode, verifyCode, resendCode, type LoginState } from "./actions";
+import { track } from "@/components/analytics";
 
 const initial: LoginState = { step: "email", email: "" };
 
@@ -14,6 +15,9 @@ export function LoginForm() {
   const [last, setLast] = useState<"verify" | "resend">("verify");
 
   const onCodeStep = sent.step === "code" && !editing;
+  useEffect(() => {
+    if (sent.step === "code") track("login_code_requested");
+  }, [sent]);
   const email = sent.email;
   const codeError = last === "verify" ? verified.error : resent.error;
 
@@ -45,6 +49,7 @@ export function LoginForm() {
       action={(fd) => {
         // Ziel nach dem Login aus der Adresse lesen (der Server prüft es noch einmal)
         fd.set("next", new URLSearchParams(window.location.search).get("next") ?? "/home");
+        track("login_code_submitted");
         verifyAction(fd);
       }}
       className="flex flex-col gap-6"

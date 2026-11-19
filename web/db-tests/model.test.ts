@@ -276,7 +276,7 @@ describe("10 · Melden (TRUST-05) und Feedback", () => {
 
   it("Feedback: auch ohne Login abschicken, aber nur der Admin kann es lesen", async () => {
     const marker = `fb-${randomUUID()}`;
-    await as(null, (q) => q("insert into public.feedback (page, kind, message) values ('/login', 'bug', $1)", [marker]));
+    await as(null, (q) => q("select public.submit_feedback('/login', 'bug', $1, false)", [marker]));
     const someone = await newUser();
     expect((await as(someone, (q) => q("select * from public.feedback where message = $1", [marker]))).rowCount).toBe(0);
     expect((await as(null, (q) => q("select * from public.feedback where message = $1", [marker]))).rowCount).toBe(0);
