@@ -30,4 +30,4 @@ jobs:
       - name: Ausstehende Migrationen anzeigen
         run: supabase migration list --remote
       - name: Migrationen einspielen
-        run: supabase db push --remote
+        run: supabase db push --remote --yes
