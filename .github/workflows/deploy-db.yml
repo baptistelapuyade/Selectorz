@@ -1,0 +1,33 @@
+# Spielt neue Datenbank-Migrationen auf das echte Supabase-Projekt ein,
+# sobald sie (nach grüner CI und Freigabe) auf main landen.
+# Nur Migrationen; Auth- und Mail-Einstellungen bleiben im Dashboard.
+name: Datenbank deployen
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-db
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: xrajutdssaqdroydriiy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref "$PROJECT_REF"
+      - name: Ausstehende Migrationen anzeigen
+        run: supabase migration list
+      - name: Migrationen einspielen
+        run: supabase db push

@@ -22,7 +22,7 @@ async function RedirectIfLoggedIn({ searchParams }: { searchParams: SP }) {
 
 export default function LoginPage({ searchParams }: { searchParams: SP }) {
   return (
-    <div className="grid min-h-dvh md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="grid flex-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <aside className="hidden flex-col justify-between bg-night-bg p-10 text-night-t1 md:flex">
         <Link href="/" className="text-[18px] font-extrabold tracking-tight">Selectorz</Link>
         <div className="flex flex-col gap-6">
