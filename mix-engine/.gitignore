@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+
+# Eigene Testtracks kommen nie ins Repo (nur der leere Ordner ist versioniert)
+test-audio/*
+!test-audio/.gitkeep
+
+# Modelle werden per `npm run models` geladen, nicht versioniert
+public/models/*
+!public/models/.gitkeep
