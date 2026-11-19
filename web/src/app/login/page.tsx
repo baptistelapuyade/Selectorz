@@ -10,13 +10,14 @@ export const metadata: Metadata = { title: "Log in · Selectorz" };
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
-// Liest Sitzung und Ziel zur Laufzeit; steht deshalb hinter Suspense (Cache Components).
-async function LoginGate({ searchParams }: { searchParams: SP }) {
+// Wer schon angemeldet ist, wird weitergeleitet. Liest Sitzung zur Laufzeit,
+// deshalb hinter Suspense; das Formular selbst gehört zur statischen Seite.
+async function RedirectIfLoggedIn({ searchParams }: { searchParams: SP }) {
   const next = safeNext((await searchParams).next);
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect(next);
-  return <LoginForm next={next} />;
+  return null;
 }
 
 export default function LoginPage({ searchParams }: { searchParams: SP }) {
@@ -37,8 +38,9 @@ export default function LoginPage({ searchParams }: { searchParams: SP }) {
       <main className="flex flex-col px-4 py-6 md:px-20 md:py-10">
         <Link href="/" className="text-[15px] font-extrabold tracking-tight md:hidden">Selectorz</Link>
         <div className="my-auto w-full max-w-[440px] py-10">
-          <Suspense fallback={<LoginForm next="/home" />}>
-            <LoginGate searchParams={searchParams} />
+          <LoginForm />
+          <Suspense fallback={null}>
+            <RedirectIfLoggedIn searchParams={searchParams} />
           </Suspense>
         </div>
         <p className="text-[14px] text-ink-3">
