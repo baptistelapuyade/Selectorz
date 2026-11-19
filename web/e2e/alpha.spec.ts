@@ -59,7 +59,11 @@ test("5 · Mail-Einstellung wird gespeichert, Entblocken funktioniert", async ({
   const box = page.getByLabel(/email when it's my turn/i);
   await expect(box).toBeChecked();
   await box.uncheck();
-  await page.getByRole("button", { name: "Save" }).click();
+  // auf die Server-Antwort warten, sonst lädt der Test neu, bevor gespeichert ist
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/settings")),
+    page.getByRole("button", { name: "Save" }).click(),
+  ]);
   await page.reload();
   await expect(page.getByLabel(/email when it's my turn/i)).not.toBeChecked();
 
