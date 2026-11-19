@@ -10,10 +10,12 @@ export function LoginForm({ next }: { next: string }) {
   const [verified, verifyAction, verifying] = useActionState(verifyCode, initial);
   const [resent, resendAction, resending] = useActionState(resendCode, initial);
   const [editing, setEditing] = useState(false);
+  // Welche Aktion zuletzt lief, damit Fehler und Hinweise nicht veralten.
+  const [last, setLast] = useState<"verify" | "resend">("verify");
 
   const onCodeStep = sent.step === "code" && !editing;
   const email = sent.email;
-  const codeError = verified.error ?? resent.error;
+  const codeError = last === "verify" ? verified.error : resent.error;
 
   if (!onCodeStep) {
     return (
@@ -66,9 +68,9 @@ export function LoginForm({ next }: { next: string }) {
         {codeError && <span className="text-[13px] text-error-text">{codeError}</span>}
         {!codeError && resent.notice && <span className="text-[13px] text-ok">{resent.notice}</span>}
       </label>
-      <Primary busy={verifying}>Log in</Primary>
+      <Primary busy={verifying} onClick={() => setLast("verify")}>Log in</Primary>
       <div className="flex gap-5 text-[14px]">
-        <button formAction={resendAction} formNoValidate disabled={resending} className="font-semibold underline underline-offset-4 disabled:opacity-50">
+        <button formAction={resendAction} formNoValidate onClick={() => setLast("resend")} disabled={resending} className="font-semibold underline underline-offset-4 disabled:opacity-50">
           Send a new code
         </button>
         <button type="button" onClick={() => setEditing(true)} className="font-semibold underline underline-offset-4">
@@ -88,10 +90,11 @@ function Heading({ title, sub }: { title: string; sub: React.ReactNode }) {
   );
 }
 
-function Primary({ busy, children }: { busy: boolean; children: React.ReactNode }) {
+function Primary({ busy, children, onClick }: { busy: boolean; children: React.ReactNode; onClick?: () => void }) {
   return (
     <button
       type="submit"
+      onClick={onClick}
       disabled={busy}
       className="flex h-[58px] items-center justify-between rounded-full bg-ink px-7 text-[16px] font-semibold text-night-t1 shadow-cta transition-transform hover:-translate-y-0.5 active:scale-[0.96] disabled:bg-field-border disabled:shadow-none"
     >
