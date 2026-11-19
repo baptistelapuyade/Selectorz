@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { db, fresh, login, userId } from "./helpers";
 
-test.afterAll(() => db.end());
-
 // Abnahme Alpha-Betrieb (Plan vom 19.11.2026)
 
 for (const path of ["/", "/login", "/imprint", "/privacy"]) {

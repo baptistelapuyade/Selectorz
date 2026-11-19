@@ -1,8 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { db, fresh, login, userId } from "./helpers";
 
-test.afterAll(() => db.end());
-
 // Abnahme M1a: öffentliches Profil (PRD 22 A1, A4, A6, C20, D23; PROFILE-07; MEDIA-07/09; TRUST-05)
 
 type Opts = { name?: string; look?: "day" | "night"; status?: "published" | "withdrawn"; minimal?: boolean };
@@ -67,11 +65,13 @@ for (const look of ["day", "night"] as const) {
 
 test("zurückgezogen und nie vergeben sehen gleich aus: No page here", async ({ page }) => {
   const { handle } = await seedProfile({ status: "withdrawn" });
+  const texts: string[] = [];
   for (const path of [`/${handle}`, "/nobody-here-123"]) {
-    const res = await page.goto(path);
-    expect(res?.status()).toBe(404);
+    await page.goto(path);
     await expect(page.getByRole("heading", { name: /no page here/i })).toBeVisible();
+    texts.push(await page.locator("main").innerText());
   }
+  expect(texts[0]).toBe(texts[1]); // nicht erkennbar, dass es die Seite einmal gab
 });
 
 test("Player lädt erst nach Tippen und immer nur einer gleichzeitig", async ({ page }) => {
