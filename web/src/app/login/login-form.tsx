@@ -5,7 +5,7 @@ import { sendCode, verifyCode, resendCode, type LoginState } from "./actions";
 
 const initial: LoginState = { step: "email", email: "" };
 
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm() {
   const [sent, sendAction, sending] = useActionState(sendCode, initial);
   const [verified, verifyAction, verifying] = useActionState(verifyCode, initial);
   const [resent, resendAction, resending] = useActionState(resendCode, initial);
@@ -41,7 +41,14 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form action={verifyAction} className="flex flex-col gap-6">
+    <form
+      action={(fd) => {
+        // Ziel nach dem Login aus der Adresse lesen (der Server prüft es noch einmal)
+        fd.set("next", new URLSearchParams(window.location.search).get("next") ?? "/home");
+        verifyAction(fd);
+      }}
+      className="flex flex-col gap-6"
+    >
       <Heading
         title="Check your inbox."
         sub={
@@ -51,7 +58,6 @@ export function LoginForm({ next }: { next: string }) {
         }
       />
       <input type="hidden" name="email" value={email} />
-      <input type="hidden" name="next" value={next} />
       <label className="flex flex-col gap-2">
         <span className="label-mono text-ink-3">6-digit code</span>
         <input
