@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Design-Tokens nach „Selectorz Design-System v0.1“ (Projekt-Doc). Einzige Quelle für Farben. */
+@theme {
+  --color-bg: #ededea;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f4f4f1;
+  --color-ink: #111111;
+  --color-ink-2: #3a3a3d;
+  --color-ink-3: #57575a;
+  --color-ink-4: #8a8a86;
+  --color-line: #d2d2ce;
+  --color-line-soft: #e2e2de;
+  --color-field-border: #b9b9b4;
+  --color-chip-border: #c9c9c4;
+
+  --color-night-bg: #0b0b0c;
+  --color-night-surface: #1a1a1d;
+  --color-night-line: #26262a;
+  --color-night-t1: #f2f2f0;
+  --color-night-t2: #b4b4ba;
+  --color-night-t3: #8e8e95;
+
+  --color-day-ground: #f3f1ec;
+  --color-lila: #8c93ff;
+  --color-lime: #e4f45a;
+  --color-orange: #f0532a;
+  --color-flieder: #c9b8ff;
+
+  --color-error-border: #b4321a;
+  --color-error-text: #8e2412;
+  --color-ok: #2e8b57;
+
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 18px;
+  --radius-xl: 22px;
+
+  --shadow-card: 0 1px 2px rgba(17, 17, 17, 0.06), 0 24px 60px rgba(17, 17, 17, 0.08);
+  --shadow-modal: 0 40px 100px rgba(0, 0, 0, 0.4);
+  --shadow-cta: -6px 0 22px rgba(140, 147, 255, 0.45), 6px 0 22px rgba(240, 83, 42, 0.35);
+
+  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Looks: Akzente pro Seite über data-look umschalten */
+[data-look="day"] { --look-ground: #f3f1ec; --look-a1: #8c93ff; --look-a2: #e4f45a; --look-text: #111111; }
+[data-look="night"] { --look-ground: #0b0b0c; --look-a1: #f0532a; --look-a2: #c9b8ff; --look-text: #f2f2f0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
