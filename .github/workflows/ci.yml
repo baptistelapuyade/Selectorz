@@ -73,6 +73,11 @@ jobs:
           echo "MAILPIT_URL=${MAILPIT_URL:-${INBUCKET_URL:-http://127.0.0.1:54324}}" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000" >> "$GITHUB_ENV"
           echo "DB_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "::add-mask::${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+          echo "SUPABASE_SECRET_KEY=${SECRET_KEY:-$SERVICE_ROLE_KEY}" >> "$GITHUB_ENV"
+          # PostHog im Test: Dummy-Key, Anfragen werden im Browser-Test abgefangen
+          echo "NEXT_PUBLIC_POSTHOG_KEY=phc_e2e_test" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_POSTHOG_HOST=https://ph.e2e.test" >> "$GITHUB_ENV"
       - run: npm ci
         working-directory: web
       - name: Datenbank-Tests (Rechte, Zustände, Gleichzeitigkeit)

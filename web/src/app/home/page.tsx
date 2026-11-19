@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Home · Selectorz" };
 
 // Platzhalter für die eigene Übersicht (DeskHome3). Zeigt vorerst nur, dass der Login klappt.
 async function Who() {
+  await connection(); // Sitzung prüfen heißt: Uhrzeit pro Request (Cache Components)
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/login?next=/home");
@@ -19,9 +22,12 @@ export default function HomePage() {
     <main className="flex flex-1 flex-col gap-10 px-4 py-6 md:px-20 md:py-10">
       <header className="flex items-center justify-between">
         <span className="text-[18px] font-extrabold tracking-tight">Selectorz</span>
+        <div className="flex items-center gap-3">
+        <Link href="/settings" className="text-[14px] font-semibold underline underline-offset-4">Settings</Link>
         <form action="/auth/signout" method="post">
           <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold">Log out</button>
         </form>
+        </div>
       </header>
       <div className="flex flex-col gap-3">
         <span className="label-mono text-ink-3">You&apos;re in</span>
