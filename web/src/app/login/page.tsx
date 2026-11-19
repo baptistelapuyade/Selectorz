@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/safe-next";
@@ -13,6 +14,7 @@ type SP = Promise<Record<string, string | string[] | undefined>>;
 // Wer schon angemeldet ist, wird weitergeleitet. Liest Sitzung zur Laufzeit,
 // deshalb hinter Suspense; das Formular selbst gehört zur statischen Seite.
 async function RedirectIfLoggedIn({ searchParams }: { searchParams: SP }) {
+  await connection(); // Sitzung prüfen heißt: Uhrzeit pro Request (Cache Components)
   const next = safeNext((await searchParams).next);
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();

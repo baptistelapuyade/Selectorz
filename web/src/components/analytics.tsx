@@ -36,6 +36,8 @@ export function Analytics() {
       disable_session_recording: true,
       disable_surveys: true,
       advanced_disable_flags: true,
+      // Headless-Browser der Tests würden sonst als Bot verworfen; nur mit Test-Key
+      opt_out_useragent_filter: KEY === "phc_e2e_test",
       disable_compression: true, // kleine Mengen; Klartext macht die Datenschutz-Tests prüfbar
       before_send: (event) => {
         if (!event) return event;

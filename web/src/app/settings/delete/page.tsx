@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteForm } from "./delete-form";
 
@@ -15,6 +16,7 @@ const STEPS = [
 ];
 
 async function Confirm() {
+  await connection(); // Sitzung prüfen heißt: Uhrzeit pro Request (Cache Components)
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/login?next=/settings/delete");

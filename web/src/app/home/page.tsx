@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Home · Selectorz" };
 
 // Platzhalter für die eigene Übersicht (DeskHome3). Zeigt vorerst nur, dass der Login klappt.
 async function Who() {
+  await connection(); // Sitzung prüfen heißt: Uhrzeit pro Request (Cache Components)
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/login?next=/home");
