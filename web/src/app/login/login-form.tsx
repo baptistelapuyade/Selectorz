@@ -1,9 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import posthog from "posthog-js";
 import { sendCode, verifyCode, resendCode, type LoginState } from "./actions";
 
 const initial: LoginState = { step: "email", email: "" };
+const isPostHogConfigured = Boolean(
+  process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST,
+);
 
 export function LoginForm() {
   const [sent, sendAction, sending] = useActionState(sendCode, initial);
@@ -19,7 +23,11 @@ export function LoginForm() {
 
   if (!onCodeStep) {
     return (
-      <form action={(fd) => { setEditing(false); sendAction(fd); }} className="flex flex-col gap-6">
+      <form action={(fd) => {
+        if (isPostHogConfigured) posthog.capture("login_code_requested", { auth_method: "email_otp" });
+        setEditing(false);
+        sendAction(fd);
+      }} className="flex flex-col gap-6">
         <Heading title="Welcome back." sub="No password. Enter your email and we send you a code." />
         <label className="flex flex-col gap-2">
           <span className="label-mono text-ink-3">Email</span>
@@ -45,6 +53,7 @@ export function LoginForm() {
       action={(fd) => {
         // Ziel nach dem Login aus der Adresse lesen (der Server prüft es noch einmal)
         fd.set("next", new URLSearchParams(window.location.search).get("next") ?? "/home");
+        if (isPostHogConfigured) posthog.capture("login_verification_submitted", { auth_method: "email_otp" });
         verifyAction(fd);
       }}
       className="flex flex-col gap-6"
@@ -76,7 +85,10 @@ export function LoginForm() {
       </label>
       <Primary busy={verifying} onClick={() => setLast("verify")}>Log in</Primary>
       <div className="flex gap-5 text-[14px]">
-        <button formAction={resendAction} formNoValidate onClick={() => setLast("resend")} disabled={resending} className="font-semibold underline underline-offset-4 disabled:opacity-50">
+        <button formAction={resendAction} formNoValidate onClick={() => {
+          setLast("resend");
+          if (isPostHogConfigured) posthog.capture("login_code_resent", { auth_method: "email_otp" });
+        }} disabled={resending} className="font-semibold underline underline-offset-4 disabled:opacity-50">
           Send a new code
         </button>
         <button type="button" onClick={() => setEditing(true)} className="font-semibold underline underline-offset-4">
