@@ -28,6 +28,6 @@ jobs:
           version: latest
       - run: supabase link --project-ref "$PROJECT_REF"
       - name: Ausstehende Migrationen anzeigen
-        run: supabase migration list
+        run: supabase migration list --remote
       - name: Migrationen einspielen
-        run: supabase db push
+        run: supabase db push --remote
