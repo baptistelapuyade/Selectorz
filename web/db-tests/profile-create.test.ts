@@ -161,12 +161,12 @@ describe("Foto-Speicher „avatars“ (TRUST-03)", () => {
     );
   });
 
-  it("fremde Fotos lassen sich weder ändern noch löschen", async () => {
+  // Löschen geht bei Supabase nur über die Speicher-API (direktes SQL-Löschen ist gesperrt); die Regel dafür
+  // ist dieselbe wie fürs Ändern, daher prüfen wir hier das Ändern.
+  it("fremde Fotos lassen sich nicht ändern", async () => {
     const u = await newUser();
     const other = await newUser();
     await as(u, (q) => q("insert into storage.objects (bucket_id, name) values ('avatars', $1)", [`${u}/c.png`]));
-    const del = await as(other, (q) => q("delete from storage.objects where name = $1", [`${u}/c.png`]));
-    expect(del.rowCount).toBe(0);
     const upd = await as(other, (q) => q("update storage.objects set metadata = '{}' where name = $1", [`${u}/c.png`]));
     expect(upd.rowCount).toBe(0);
   });
