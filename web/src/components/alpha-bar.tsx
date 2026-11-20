@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { submitFeedback, type FeedbackState } from "@/app/feedback/actions";
 import { track } from "@/components/analytics";
 import { useClosable } from "@/components/use-closable";
+import { createClient } from "@/lib/supabase/client";
 
 const KINDS = [
   { id: "bug", label: "Bug" },
@@ -60,6 +61,15 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Eingeloggt: Konto-Mail ist bekannt, Häkchen genügt. Sonst: Mail-Feld (freiwillig).
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => setLoggedIn(!!data.session))
+      .catch(() => setLoggedIn(false));
+  }, []);
+
   useEffect(() => {
     if (state.status === "sent") track("feedback_sent", { kind });
   }, [state.status, kind]);
@@ -83,7 +93,7 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
           <div className="appear flex flex-col gap-4">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-lime text-ink">✓</span>
             <h2 id="fb-title" className="text-[34px] font-extrabold leading-[0.92] tracking-[-0.045em]">Got it.<br />Thank you.</h2>
-            <p className="text-[15px] leading-[1.45] text-night-t2">Baptiste reads every note. If you said yes to email, you might hear back.</p>
+            <p className="text-[15px] leading-[1.45] text-night-t2">Baptiste reads every note. If you left a way to reach you, you might hear back.</p>
             <button onClick={onClose} className="h-[50px] rounded-full bg-night-t1 text-[15px] font-semibold text-ink hover:bg-lime">Back to the page</button>
           </div>
         ) : (
@@ -124,10 +134,24 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
             <span className="flex items-center gap-2 text-[12px] text-ink-3">
               <span className="label-mono text-ink-4">Page</span>selectorz.art{pathname} · added for you
             </span>
-            <label className="flex items-center gap-3 text-[15px]">
-              <input type="checkbox" name="contact_ok" defaultChecked className="h-5 w-5 accent-ink" />
-              You can email me about this
-            </label>
+            {loggedIn ? (
+              <label className="flex items-center gap-3 text-[15px]">
+                <input type="checkbox" name="contact_ok" defaultChecked className="h-5 w-5 accent-ink" />
+                You can email me about this
+              </label>
+            ) : (
+              <label className="flex flex-col gap-1.5 text-[14px] font-semibold">
+                <span>Your email <span className="font-normal text-ink-3">Optional, only if you&apos;d like a reply</span></span>
+                <input
+                  type="email"
+                  name="contact_email"
+                  autoComplete="email"
+                  maxLength={254}
+                  placeholder="you@example.com"
+                  className="field h-12 rounded-s border border-field-border bg-surface px-3.5 text-[16px] font-normal outline-none focus:border-2 focus:border-ink"
+                />
+              </label>
+            )}
             {state.error && <p key={state.error} className="shake text-[13px] text-error-text">{state.error}</p>}
             <button
               type="submit"

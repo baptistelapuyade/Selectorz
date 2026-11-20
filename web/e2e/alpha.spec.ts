@@ -26,8 +26,9 @@ test("2 · Feedback ohne Text geht nicht, mit Text landet es mit Seite und Art",
   await dialog.getByRole("button", { name: /send feedback/i }).click();
   await expect(dialog.getByRole("heading", { name: /got it/i })).toBeVisible();
 
+  // ohne Mail-Adresse: keine Antwort gewünscht
   const { rows } = await db.query("select page, kind, contact_ok from public.feedback where message = $1", [marker]);
-  expect(rows).toEqual([{ page: "/privacy", kind: "idea", contact_ok: true }]);
+  expect(rows).toEqual([{ page: "/privacy", kind: "idea", contact_ok: false }]);
 });
 
 test("3 · Köderfeld: Bot-Feedback wird still verworfen", async ({ page }) => {
@@ -140,4 +141,35 @@ test("9 · Bei reduzierter Bewegung schließt das Panel sofort", async ({ page }
   await page.keyboard.press("Escape");
   await expect(page.locator(".closing")).toHaveCount(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("10 · Ohne Login: freiwillige Mail-Adresse, wird geprüft und nicht gespeichert", async ({ page }) => {
+  const marker = `e2e-reply-${Date.now()}-${Math.random()}`;
+  await page.goto("/imprint");
+  await page.getByRole("button", { name: "Feedback", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("checkbox", { name: /email me/i })).toHaveCount(0);
+  await dialog.getByLabel("Tell us more").fill(marker);
+  const mail = dialog.getByLabel(/your email/i);
+  // Browser-Prüfung umgehen, damit die Server-Prüfung greift
+  await dialog.locator("form").evaluate((f) => ((f as HTMLFormElement).noValidate = true));
+  await mail.fill("not-an-email");
+  await dialog.getByRole("button", { name: /send feedback/i }).click();
+  await expect(dialog.getByText("That email doesn't look right.")).toBeVisible();
+
+  await mail.fill("tester@example.com");
+  await dialog.getByRole("button", { name: /send feedback/i }).click();
+  await expect(dialog.getByRole("heading", { name: /got it/i })).toBeVisible();
+  const { rows } = await db.query("select contact_ok, to_jsonb(f)::text as row from public.feedback f where message = $1", [marker]);
+  expect(rows).toHaveLength(1);
+  expect(rows[0].contact_ok).toBe(true);
+  expect(rows[0].row).not.toContain("tester@example.com");
+});
+
+test("11 · Eingeloggt: Häkchen statt Mail-Feld", async ({ page }) => {
+  await login(page, fresh("fbmail"));
+  await page.getByRole("button", { name: "Feedback", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("checkbox", { name: /email me/i })).toBeChecked();
+  await expect(dialog.getByLabel(/your email/i)).toHaveCount(0);
 });
