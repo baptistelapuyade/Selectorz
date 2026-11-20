@@ -63,6 +63,9 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
 
   // Eingeloggt: Konto-Mail ist bekannt, Häkchen genügt. Sonst: Mail-Feld (freiwillig).
   const [loggedIn, setLoggedIn] = useState(false);
+  // Felder selbst halten: React setzt Formulare nach einer Server-Antwort zurück, Text darf bei Fehlern nicht verloren gehen
+  const [message, setMessage] = useState("");
+  const [replyTo, setReplyTo] = useState("");
   useEffect(() => {
     createClient()
       .auth.getSession()
@@ -125,6 +128,8 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
               Tell us more
               <textarea
                 name="message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 required
                 maxLength={3000}
                 rows={4}
@@ -145,6 +150,8 @@ function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
                 <input
                   type="email"
                   name="contact_email"
+                  value={replyTo}
+                  onChange={(e) => setReplyTo(e.target.value)}
                   autoComplete="email"
                   maxLength={254}
                   placeholder="you@example.com"
