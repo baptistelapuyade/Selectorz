@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { db, fresh } from "./helpers";
 import { latestCode } from "./mailpit";
@@ -7,7 +8,7 @@ import { latestCode } from "./mailpit";
 // Metadaten kommen in der CI aus einer Attrappe (OEMBED_FAKE=1): Titel aus dem letzten Pfadteil, Name aus dem ersten;
 // Links mit „fail“ im Pfad scheitern absichtlich.
 
-const PORTRAIT = readFileSync(new URL("./fixtures/portrait.jpg", import.meta.url));
+const PORTRAIT = readFileSync(join(__dirname, "fixtures", "portrait.jpg"));
 const tag = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
 async function noHorizontalScroll(page: Page) {
