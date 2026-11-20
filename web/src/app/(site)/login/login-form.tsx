@@ -35,9 +35,9 @@ export function LoginForm() {
             required
             defaultValue={email}
             placeholder="you@example.com"
-            className={`h-14 rounded-s border bg-surface px-4 text-[16px] outline-none focus:border-2 focus:border-ink ${sent.error ? "border-2 border-error-border" : "border-field-border"}`}
+            className={`field h-14 rounded-s border bg-surface px-4 text-[16px] outline-none focus:border-2 focus:border-ink ${sent.error ? "border-2 border-error-border" : "border-field-border"}`}
           />
-          {sent.error && <span className="text-[13px] text-error-text">{sent.error}</span>}
+          {sent.error && <span key={sent.error} className="shake text-[13px] text-error-text">{sent.error}</span>}
         </label>
         <Primary busy={sending}>Send me a code</Primary>
       </form>
@@ -74,17 +74,17 @@ export function LoginForm() {
           required
           autoFocus
           placeholder="000000"
-          className={`h-16 rounded-s border bg-surface px-4 font-mono text-[28px] tracking-[0.4em] outline-none focus:border-2 focus:border-ink ${codeError ? "border-2 border-error-border" : "border-field-border"}`}
+          className={`field h-16 rounded-s border bg-surface px-4 font-mono text-[28px] tracking-[0.4em] outline-none focus:border-2 focus:border-ink ${codeError ? "border-2 border-error-border" : "border-field-border"}`}
         />
-        {codeError && <span className="text-[13px] text-error-text">{codeError}</span>}
+        {codeError && <span key={codeError} className="shake text-[13px] text-error-text">{codeError}</span>}
         {!codeError && resent.notice && <span className="text-[13px] text-ok">{resent.notice}</span>}
       </label>
       <Primary busy={verifying} onClick={() => setLast("verify")}>Log in</Primary>
       <div className="flex gap-5 text-[14px]">
-        <button formAction={resendAction} formNoValidate onClick={() => setLast("resend")} disabled={resending} className="font-semibold underline underline-offset-4 disabled:opacity-50">
+        <button formAction={resendAction} formNoValidate onClick={() => setLast("resend")} disabled={resending} className="link-hover font-semibold underline underline-offset-4 disabled:opacity-50">
           Send a new code
         </button>
-        <button type="button" onClick={() => setEditing(true)} className="font-semibold underline underline-offset-4">
+        <button type="button" onClick={() => setEditing(true)} className="link-hover font-semibold underline underline-offset-4">
           Change email
         </button>
       </div>
@@ -107,10 +107,10 @@ function Primary({ busy, children, onClick }: { busy: boolean; children: React.R
       type="submit"
       onClick={onClick}
       disabled={busy}
-      className="flex h-[58px] items-center justify-between rounded-full bg-ink px-7 text-[16px] font-semibold text-night-t1 shadow-cta transition-transform hover:-translate-y-0.5 active:scale-[0.96] disabled:bg-field-border disabled:shadow-none"
+      className="cta flex h-[58px] items-center justify-between rounded-full bg-ink px-7 text-[16px] font-semibold text-night-t1 shadow-cta disabled:bg-field-border disabled:shadow-none"
     >
       <span>{busy ? "One moment…" : children}</span>
-      <span aria-hidden>→</span>
+      <span aria-hidden className="cta-arrow">→</span>
     </button>
   );
 }

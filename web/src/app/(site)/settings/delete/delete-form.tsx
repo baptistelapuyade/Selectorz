@@ -12,11 +12,11 @@ export function DeleteForm({ email }: { email: string }) {
         <input
           name="confirm"
           autoComplete="off"
-          className={`h-14 rounded-s border bg-surface px-4 text-[16px] font-normal outline-none focus:border-2 focus:border-ink ${state.error ? "border-2 border-error-border" : "border-field-border"}`}
+          className={`field h-14 rounded-s border bg-surface px-4 text-[16px] font-normal outline-none focus:border-2 focus:border-ink ${state.error ? "border-2 border-error-border" : "border-field-border"}`}
         />
       </label>
-      {state.error && <p className="text-[13px] text-error-text">{state.error}</p>}
-      <button disabled={pending} className="h-[54px] rounded-full bg-error-border text-[16px] font-semibold text-white disabled:opacity-60">
+      {state.error && <p key={state.error} className="shake text-[13px] text-error-text">{state.error}</p>}
+      <button disabled={pending} className="h-[54px] rounded-full bg-error-border text-[16px] font-semibold text-white hover:bg-error-text disabled:opacity-60">
         {pending ? "Deleting…" : "Delete my account"}
       </button>
     </form>

@@ -74,26 +74,43 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
 
         {/* Abschluss: Track-Kette und Footer */}
         <div className="mt-auto flex flex-col pt-20">
-          <section className="border-t-2 px-4 pb-16 pt-10 md:px-10" style={{ background: t.ctaBg, borderColor: t.fg }}>
-            <div className="mx-auto flex max-w-[1280px] flex-col gap-4">
-              <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: t.muted }}>TRACK CHAIN</span>
-              <p className="text-[30px] font-extrabold leading-none tracking-[-0.04em] md:text-[56px]">Play a round<br />with {first}.</p>
-              <p className="max-w-md text-[15px] leading-[1.45]" style={{ color: t.muted }}>
-                You pick track 1, {first} answers. Back and forth, six tracks in total. Track chains open in the next update.
-              </p>
+          <section className="border-t-2" style={{ background: t.ctaBg, borderColor: t.fg }}>
+            <div className="mx-auto grid max-w-[1280px] gap-8 px-4 pb-16 pt-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-12 md:px-10 md:pb-20 md:pt-14">
+              <div className="flex flex-col gap-4">
+                <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: t.muted }}>TRACK CHAIN</span>
+                <p className="text-[30px] font-extrabold leading-none tracking-[-0.04em] md:text-[56px]">Play a round<br />with {first}.</p>
+                <p className="max-w-md text-[15px] leading-[1.45]" style={{ color: t.muted }}>
+                  You pick track 1, {first} answers. Back and forth, six tracks in total.
+                </p>
+              </div>
+              {/* Ketten kommen mit M2: Knopf schon an seinem Platz, klar als „bald“ markiert */}
+              <div className="flex flex-col gap-2.5 md:items-end">
+                <span
+                  role="button"
+                  aria-disabled="true"
+                  className="flex h-[58px] w-full cursor-not-allowed items-center justify-between gap-6 rounded-full px-6 text-[16px] font-semibold opacity-60 md:w-[340px]"
+                  style={{ background: t.btnBg, color: t.btnFg }}
+                >
+                  <span>Start a track chain</span>
+                  <span aria-hidden>→</span>
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: t.muted }}>OPENS IN THE NEXT UPDATE</span>
+              </div>
             </div>
           </section>
-          <footer className="flex flex-col gap-3.5 px-4 pb-5 pt-7 md:px-10" style={{ background: t.footBg, color: t.footFg }}>
+          <footer style={{ background: t.footBg, color: t.footFg }}>
+           <div className="mx-auto flex max-w-[1280px] flex-col gap-3.5 px-4 pb-5 pt-7 md:px-10">
             <span className="text-[72px] font-extrabold leading-[0.85] tracking-[-0.06em] md:text-center md:text-[200px]">Selectorz</span>
             <span className="flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] tracking-[0.08em]">
               <span>YOUR SOUND, ONE LINK</span>
               <span className="flex gap-4">
-                <Link href="/privacy">PRIVACY</Link>
-                <Link href="/imprint">IMPRINT</Link>
+                <Link href="/privacy" className="hover:underline">PRIVACY</Link>
+                <Link href="/imprint" className="hover:underline">IMPRINT</Link>
                 <ReportLink targetType="profile" targetId={profileId} accountId={accountId} name={p.display_name} color={t.footFg} />
-                <Link href="/">GET YOUR PAGE ↗</Link>
+                <Link href="/" className="link-hover hover:underline">GET YOUR PAGE ↗</Link>
               </span>
             </span>
+           </div>
           </footer>
         </div>
       </div>
@@ -161,11 +178,11 @@ function Links({ p, t }: { p: PublicProfile; t: T }) {
           href={l.url}
           target="_blank"
           rel="noopener noreferrer me"
-          className={`flex h-[52px] items-center justify-between overflow-hidden whitespace-nowrap px-4 text-[15px] font-semibold md:h-[60px] md:px-[18px] ${i === n - 1 && n % 2 === 1 ? "col-span-2" : ""}`}
+          className={`tint nudge flex h-[52px] items-center justify-between overflow-hidden whitespace-nowrap px-4 text-[15px] font-semibold md:h-[60px] md:px-[18px] ${i === n - 1 && n % 2 === 1 ? "col-span-2" : ""}`}
           style={{ background: t.bg, color: t.fg }}
         >
           <span className="truncate">{l.label}</span>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true" className="flex-none"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden="true" className="nudge-arrow flex-none"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
         </a>
       ))}
     </nav>

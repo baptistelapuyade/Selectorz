@@ -23,9 +23,9 @@ export default function HomePage() {
       <header className="flex items-center justify-between">
         <span className="text-[18px] font-extrabold tracking-tight">Selectorz</span>
         <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-[14px] font-semibold underline underline-offset-4">Settings</Link>
+        <Link href="/settings" className="text-[14px] font-semibold underline underline-offset-4 link-hover">Settings</Link>
         <form action="/auth/signout" method="post">
-          <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold">Log out</button>
+          <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Log out</button>
         </form>
         </div>
       </header>

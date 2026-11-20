@@ -40,7 +40,7 @@ async function SettingsContent() {
               <span className="text-[14px] text-ink-3">One mail per move. Includes the link.</span>
             </span>
           </label>
-          <button className="h-11 self-start rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold">Save</button>
+          <button className="h-11 self-start rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Save</button>
         </form>
       </Section>
 
@@ -62,7 +62,7 @@ async function SettingsContent() {
                 </span>
                 <form action={unblock} className="ml-auto">
                   <input type="hidden" name="account_id" value={b.account_id} />
-                  <button className="text-[14px] font-semibold underline underline-offset-4">Unblock</button>
+                  <button className="text-[14px] font-semibold underline underline-offset-4 link-hover">Unblock</button>
                 </form>
               </li>
             ))}
@@ -76,7 +76,7 @@ async function SettingsContent() {
         <p className="text-[15px] leading-[1.45] text-ink-2">
           Removes your page and takes back your approvals. You&apos;ll see what happens before anything is deleted.
         </p>
-        <Link href="/settings/delete" className="self-start text-[15px] font-semibold text-error-text underline underline-offset-4">
+        <Link href="/settings/delete" className="self-start text-[15px] font-semibold text-error-text underline underline-offset-4 link-hover">
           Delete my account
         </Link>
       </Section>
@@ -90,7 +90,7 @@ export default function SettingsPage() {
       <header className="flex items-center justify-between">
         <Link href="/home" className="text-[18px] font-extrabold tracking-tight">Selectorz</Link>
         <form action="/auth/signout" method="post">
-          <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold">Log out</button>
+          <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Log out</button>
         </form>
       </header>
       <h1 className="text-[44px] font-extrabold leading-[0.9] tracking-[-0.05em] md:text-[72px]">Settings</h1>

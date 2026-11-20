@@ -42,14 +42,14 @@ export function PlayerCard({
               setActive(playing ? null : id);
               if (!playing) track("media_opened", { provider });
             }}
-            className="flex h-12 w-12 flex-none items-center justify-center rounded-full md:h-14 md:w-14"
+            className="pop flex h-12 w-12 flex-none items-center justify-center rounded-full md:h-14 md:w-14"
             style={{ background: accent, color: onAccent }}
           >
             {playing ? <span className="text-[14px] font-bold">❚❚</span> : <PlayIcon />}
           </button>
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="flex h-12 flex-none items-center rounded-full px-4 text-[14px] font-semibold" style={{ background: accent, color: onAccent }}>
-            Open ↗
+          <a href={url} target="_blank" rel="noopener noreferrer" className="nudge pop flex h-12 flex-none items-center gap-1 rounded-full px-4 text-[14px] font-semibold" style={{ background: accent, color: onAccent }}>
+            Open <span aria-hidden className="nudge-arrow">↗</span>
           </a>
         )}
       </div>
@@ -81,7 +81,7 @@ export function TrackRow({
   const src = embedSrc(url);
   const playing = active === id && src;
   return (
-    <li style={{ borderTop: first ? "0" : `1px solid ${line}` }}>
+    <li className="row-hover" style={{ borderTop: first ? "0" : `1px solid ${line}` }}>
       <div className="flex min-h-16 items-center gap-3 py-2 pl-3 pr-1">
         <button
           type="button"
@@ -91,7 +91,7 @@ export function TrackRow({
             setActive(playing ? null : id);
             if (!playing) track("media_opened", { provider });
           }}
-          className="flex h-9 w-9 flex-none items-center justify-center rounded-full border-[1.5px] disabled:opacity-30"
+          className="tint flex h-9 w-9 flex-none items-center justify-center rounded-full border-[1.5px] disabled:opacity-30"
           style={{ borderColor: fg, color: fg }}
         >
           {playing ? <span className="text-[10px] font-bold">❚❚</span> : <PlayIcon size={11} />}
@@ -102,8 +102,8 @@ export function TrackRow({
             {[artist, PROVIDER_LABEL[provider]].filter(Boolean).join(" · ")}
           </span>
         </span>
-        <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${title} on ${PROVIDER_LABEL[provider]}`} className="flex h-11 w-11 flex-none items-center justify-center">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+        <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${title} on ${PROVIDER_LABEL[provider]}`} className="nudge flex h-11 w-11 flex-none items-center justify-center">
+          <svg className="nudge-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
         </a>
       </div>
       {playing && <iframe title={`Player: ${title}`} src={src!} allow="autoplay; encrypted-media" className="h-[166px] w-full" />}

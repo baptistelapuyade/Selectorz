@@ -10,7 +10,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         Baptiste Lapuyade, Weserstraße 140, 12059 Berlin, Germany ·{" "}
-        <a className="underline underline-offset-4" href="mailto:hello@selectorz.art">hello@selectorz.art</a>. Selectorz is in a free
+        <a className="underline underline-offset-4 link-hover" href="mailto:hello@selectorz.art">hello@selectorz.art</a>. Selectorz is in a free
         test phase (alpha).
       </>
     ),
