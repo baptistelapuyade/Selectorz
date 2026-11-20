@@ -12,7 +12,8 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
   const t = lookTokens(p.look, p.accent);
   const first = p.display_name.split(" ")[0] || p.display_name;
   const tick = [p.display_name, p.city, p.genres.join(" · "), p.plays.join(" · ")].filter(Boolean).map((s) => s!.toUpperCase());
-  const run = [...tick, ...tick, ...tick];
+  // Eine Hälfte des Laufbands: Wörter mehrfach, mindestens so breit wie der Bildschirm (nahtloser Loop)
+  const run = [...tick, ...tick, ...tick, ...tick];
   const sections = p.sections.filter((s) => hasContent(s));
 
   return (
@@ -23,9 +24,13 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
           <span className="flex-none font-semibold">ALPHA</span>
           <span className="h-3 w-px flex-none opacity-40" style={{ background: t.tickFg }} />
           <span className="marquee-mask flex flex-1 overflow-hidden">
-            <span className="marquee flex gap-3.5 whitespace-nowrap" aria-hidden="true">
-              {run.map((w, i) => (
-                <span key={i} className="flex gap-3.5"><span>{w}</span><span>→</span></span>
+            <span className="marquee flex w-max whitespace-nowrap" aria-hidden="true">
+              {[0, 1].map((half) => (
+                <span key={half} data-marquee-half className="flex min-w-[100vw] flex-none justify-around">
+                  {run.map((w, i) => (
+                    <span key={i} className="flex gap-3.5 pr-3.5"><span>{w}</span><span>→</span></span>
+                  ))}
+                </span>
               ))}
             </span>
           </span>
