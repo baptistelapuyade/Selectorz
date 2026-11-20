@@ -230,7 +230,7 @@ function Stage({ d }: { d: Draft }) {
   );
 }
 
-type HandleState = "idle" | "checking" | "free" | "taken" | "invalid";
+type HandleState = "idle" | "checking" | "free" | "taken" | "invalid" | "unknown";
 
 const MISSING_TEXT: Record<Missing, string> = {
   photo: "a photo",
@@ -268,7 +268,7 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
     const id = setTimeout(async () => {
       setHs("checking");
       const free = await checkHandle(d.handle);
-      if (n === seq.current) setHs(free ? "free" : "taken");
+      if (n === seq.current) setHs(free === null ? "unknown" : free ? "free" : "taken");
     }, 300);
     return () => clearTimeout(id);
   }, [d.handle, problem]);
@@ -350,6 +350,7 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
               {handleState === "checking" && <span className="text-ink-3">Checking…</span>}
               {handleState === "taken" && <span className="text-error-text">That one is already taken. Try another.</span>}
               {handleState === "invalid" && <span className="text-error-text">{problem}</span>}
+              {handleState === "unknown" && <span className="text-ink-3">We&apos;ll check this one when you go live.</span>}
               {handleState === "idle" && <span className="text-ink-3">This is the link for your bio. It can&apos;t change after you go live.</span>}
             </span>
           </div>

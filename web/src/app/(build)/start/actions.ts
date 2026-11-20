@@ -37,11 +37,11 @@ export async function resolveLink(input: string): Promise<Resolved> {
   }
 }
 
-// Ist das Handle frei? Nur ja/nein.
-export async function checkHandle(handle: string): Promise<boolean> {
+// Ist das Handle frei? Nur ja/nein; null, wenn die Prüfung gerade nicht geht (dann prüft „Go live“).
+export async function checkHandle(handle: string): Promise<boolean | null> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("handle_available", { h: String(handle ?? "").toLowerCase() });
-  return data === true;
+  const { data, error } = await supabase.rpc("handle_available", { h: String(handle ?? "").toLowerCase() });
+  return error || typeof data !== "boolean" ? null : data;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
