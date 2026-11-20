@@ -68,7 +68,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     title: "Feedback",
     body: (
       <>
-        If you send feedback, we store your note, the page you were on and your browser type, plus your account if you are logged in.
+        If you send feedback, we store your note, the page you were on and your browser type, plus your account if you are logged in. If you leave an email address without being logged in, it goes only into the message to our inbox so we can reply; it is not stored in our database.
         It is emailed to Baptiste. We contact you only if you ticked the box. Notes are deleted at the latest one year after the alpha
         ends. Legal basis: Art. 6 (1) (f) GDPR.
       </>

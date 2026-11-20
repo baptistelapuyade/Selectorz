@@ -29,6 +29,9 @@ export function ReportLink({ targetType, targetId, accountId, name, color }: { t
 function ReportDialog({ onClose: done, targetType, targetId, accountId, name }: { onClose: () => void; targetType: string; targetId: string; accountId: string; name: string }) {
   const { closing, close: onClose } = useClosable(done);
   const [state, action, pending] = useActionState(submitReport, { status: "idle" } as ReportState);
+  // Felder selbst halten, damit nach einer Fehlermeldung nichts verloren geht
+  const [note, setNote] = useState("");
+  const [alsoBlock, setAlsoBlock] = useState(false);
   const [reason, setReason] = useState("");
   const pathname = usePathname();
   useEffect(() => {
@@ -75,10 +78,10 @@ function ReportDialog({ onClose: done, targetType, targetId, accountId, name }: 
             </fieldset>
             <label className="flex flex-col gap-1.5 text-[14px] font-semibold">
               <span>What happened? <span className="font-normal text-ink-3">Optional</span></span>
-              <textarea name="note" rows={3} maxLength={1000} className="field rounded-s border border-field-border bg-surface px-3.5 py-3 text-[16px] font-normal outline-none focus:border-2 focus:border-ink" />
+              <textarea name="note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} className="field rounded-s border border-field-border bg-surface px-3.5 py-3 text-[16px] font-normal outline-none focus:border-2 focus:border-ink" />
             </label>
             <label className="flex items-center gap-3 text-[15px]">
-              <input type="checkbox" name="also_block" className="h-5 w-5 accent-ink" />
+              <input type="checkbox" name="also_block" checked={alsoBlock} onChange={(e) => setAlsoBlock(e.target.checked)} className="h-5 w-5 accent-ink" />
               Also block {name}
             </label>
             {state.error && <p key={state.error} className="shake text-[13px] text-error-text">{state.error}</p>}

@@ -1,4 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+// Schutz: Browser-Tests schreiben in die Datenbank. Nie gegen ein echtes Supabase-Projekt laufen lassen.
+const fromFile = existsSync(".env.local") ? /^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m.exec(readFileSync(".env.local", "utf8"))?.[1] : undefined;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? fromFile ?? "";
+if (/\.supabase\.(co|com|in)/.test(supabaseUrl)) {
+  throw new Error(`Browser-Tests abgebrochen: Supabase zeigt auf ${new URL(supabaseUrl).host}. Nur lokales Supabase erlaubt.`);
+}
 
 // Browser-Tests gegen lokales Supabase (supabase start) und den gebauten Next-Server.
 export default defineConfig({

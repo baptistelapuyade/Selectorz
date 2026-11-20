@@ -16,8 +16,12 @@ export async function submitFeedback(_prev: FeedbackState, fd: FormData): Promis
   const message = String(fd.get("message") ?? "").trim().slice(0, 3000);
   const kind = String(fd.get("kind") ?? "idea");
   const page = String(fd.get("page") ?? "").split("?")[0].slice(0, 300);
-  const contactOk = fd.get("contact_ok") === "on";
+  // Nicht eingeloggt: freiwillige Mail nur für die Antwort. Geht in die Mail an uns, nicht in die Datenbank.
+  const typedEmail = String(fd.get("contact_email") ?? "").trim().slice(0, 254);
   if (!message) return { status: "error", error: "Write a few words first." };
+  if (typedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail)) {
+    return { status: "error", error: "That email doesn't look right." };
+  }
 
   const h = await headers();
   const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim();
@@ -28,6 +32,9 @@ export async function submitFeedback(_prev: FeedbackState, fd: FormData): Promis
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
+  const accountEmail = claims?.claims?.email as string | undefined;
+  const replyEmail = accountEmail ? (fd.get("contact_ok") === "on" ? accountEmail : undefined) : typedEmail || undefined;
+  const contactOk = !!replyEmail;
   const { data: id, error } = await supabase.rpc("submit_feedback", {
     p_page: page,
     p_kind: KINDS.has(kind) ? kind : "other",
@@ -42,12 +49,11 @@ export async function submitFeedback(_prev: FeedbackState, fd: FormData): Promis
       : { status: "error", error: "Couldn't send it. Try again in a moment." };
   }
 
-  const email = claims?.claims?.email as string | undefined;
   await sendMail({
     to: "hello@selectorz.art",
     subject: `Feedback · ${kind} · ${page || "/"}`,
-    text: `${message}\n\n---\nKind: ${kind}\nPage: ${page}\nAccount: ${email ?? "not logged in"}\nContact OK: ${contactOk ? "yes" : "no"}\nBrowser: ${ua}\nID: ${id}`,
-    replyTo: contactOk && email ? email : undefined,
+    text: `${message}\n\n---\nKind: ${kind}\nPage: ${page}\nAccount: ${accountEmail ?? "not logged in"}\nReply to: ${replyEmail ?? "no reply wanted"}\nBrowser: ${ua}\nID: ${id}`,
+    replyTo: replyEmail,
     idempotencyKey: `feedback-${id}`,
   });
   return { status: "sent" };
