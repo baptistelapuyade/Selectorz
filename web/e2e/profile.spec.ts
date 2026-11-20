@@ -117,3 +117,15 @@ test("Profilseite hat genau einen schwarzen Balken: Alpha + Feedback im Laufband
   await page.getByRole("button", { name: "Feedback", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });
+
+test("Laufband ist ein endloser Loop: zwei gleiche Hälften, jede mindestens so breit wie der Bildschirm", async ({ page }) => {
+  const { handle } = await seedProfile();
+  await page.goto(`/${handle}`);
+  const halves = page.locator("[data-marquee-half]");
+  await expect(halves).toHaveCount(2);
+  const [a, b] = await halves.evaluateAll((els) => els.map((e) => ({ text: e.textContent, width: e.getBoundingClientRect().width })));
+  expect(a.text).toBe(b.text);
+  expect(Math.abs(a.width - b.width)).toBeLessThan(1);
+  const vw = await page.evaluate(() => window.innerWidth);
+  expect(a.width).toBeGreaterThanOrEqual(vw - 1);
+});
