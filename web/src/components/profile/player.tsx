@@ -42,13 +42,13 @@ export function PlayerCard({
               setActive(playing ? null : id);
               if (!playing) track("media_opened", { provider });
             }}
-            className="grow flex h-12 w-12 flex-none items-center justify-center rounded-full md:h-14 md:w-14"
+            className="pop flex h-12 w-12 flex-none items-center justify-center rounded-full md:h-14 md:w-14"
             style={{ background: accent, color: onAccent }}
           >
             {playing ? <span className="text-[14px] font-bold">❚❚</span> : <PlayIcon />}
           </button>
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="nudge grow flex h-12 flex-none items-center gap-1 rounded-full px-4 text-[14px] font-semibold" style={{ background: accent, color: onAccent }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="nudge pop flex h-12 flex-none items-center gap-1 rounded-full px-4 text-[14px] font-semibold" style={{ background: accent, color: onAccent }}>
             Open <span aria-hidden className="nudge-arrow">↗</span>
           </a>
         )}

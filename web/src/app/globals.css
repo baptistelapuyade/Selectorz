@@ -114,7 +114,7 @@ body {
   .field:hover:not(:focus) { border-color: #57575A; }
   /* Fläche in eigener Textfarbe leicht tönen – funktioniert auf jedem Look (Tag/Nacht/Akzent) */
   .tint:not(:disabled):hover { background-image: linear-gradient(color-mix(in srgb, currentColor 12%, transparent), color-mix(in srgb, currentColor 12%, transparent)); }
-  .grow:not(:disabled):hover { transform: scale(1.06); }
+  .pop:not(:disabled):hover { transform: scale(1.06); }
   .nudge:hover .nudge-arrow { transform: translate(2px, -2px); }
 }
 .nudge-arrow { transition: transform var(--motion-fast) var(--ease-out); }
