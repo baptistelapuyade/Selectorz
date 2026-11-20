@@ -153,8 +153,13 @@ function Photo({ p, t }: { p: PublicProfile; t: T }) {
   return (
     <figure className="relative m-0 aspect-[4/5] overflow-hidden" style={{ background: t.htBg }}>
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element -- bereits fertiges Halftone-Bild aus Storage
-        <img src={src} alt={`${p.display_name}, halftone portrait`} className="h-full w-full object-cover" />
+        // Gespeichert ist nur das Raster als Maske; die Farben kommen aus dem Look (kein Neu-Upload bei Look-Wechsel)
+        <div
+          role="img"
+          aria-label={`${p.display_name}, halftone portrait`}
+          className="h-full w-full"
+          style={{ background: t.htDot, WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`, WebkitMaskSize: "cover", maskSize: "cover", WebkitMaskPosition: "center", maskPosition: "center" }}
+        />
       ) : (
         <div
           className="flex h-full w-full items-center justify-center"
