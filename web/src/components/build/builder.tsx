@@ -278,7 +278,13 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
     setLiveError(null);
     const form = new FormData();
     form.set("payload", JSON.stringify(toPayload(d)));
-    form.set("photo", await (await fetch(d.photo!)).blob());
+    const blob = async (url: string) => (await fetch(url)).blob();
+    const ph = d.photo!;
+    if (ph.style === "bw") form.set("photo_bw", await blob(ph.bw));
+    else {
+      form.set("photo_day", await blob(ph.day));
+      form.set("photo_night", await blob(ph.night));
+    }
     const r = await publishProfile(form);
     if (r.ok) {
       track("profile_published", { path: d.path, look: d.look, genres: d.genres.length });
@@ -385,8 +391,19 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
               className={`relative flex aspect-[4/5] w-[150px] flex-none flex-col items-center justify-center gap-1.5 overflow-hidden rounded-l bg-bg text-[14px] font-semibold ${need("photo")}`}
               style={d.photo ? { background: t.htBg } : undefined}
             >
-              {d.photo ? (
-                <span className="absolute inset-0" style={{ background: t.htDot, WebkitMaskImage: `url(${d.photo})`, maskImage: `url(${d.photo})`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }} />
+              {d.photo?.style === "bw" ? (
+                <span className="absolute inset-0 bg-cover" style={{ backgroundImage: `url(${d.photo.bw})` }} />
+              ) : d.photo ? (
+                <span
+                  className="absolute inset-0"
+                  style={{
+                    background: t.htDot,
+                    WebkitMaskImage: `url(${d.look === "night" ? d.photo.night : d.photo.day})`,
+                    maskImage: `url(${d.look === "night" ? d.photo.night : d.photo.day})`,
+                    WebkitMaskSize: "100% 100%",
+                    maskSize: "100% 100%",
+                  }}
+                />
               ) : (
                 <>
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
@@ -477,8 +494,10 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
 
       {photoOpen && (
         <PhotoDialog
+          look={d.look}
           tint={t.htBg}
           dots={t.htDot}
+          start={d.photo?.style}
           onUse={(photo) => update({ photo })}
           onClose={() => setPhotoOpen(false)}
         />
