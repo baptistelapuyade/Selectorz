@@ -41,8 +41,17 @@ export function crop(srcW: number, srcH: number, t: Pick<Tune, "zoom" | "x" | "y
   return { sx, sy, sw: w, sh: h };
 }
 
+// Punktgröße für einen Grauwert. Day: Punkte für Schatten (dunkle Punkte auf Akzent).
+// Night: Punkte für Licht (Akzent-Punkte auf Schwarz), sonst entsteht ein Negativ.
+export function radiusFor(l: number, t: Pick<Tune, "brightness" | "contrast">, cell: number, light: boolean) {
+  const v = tone(l, t.brightness, t.contrast);
+  return dotRadius(light ? 1 - v : v, cell);
+}
+
+type Img = CanvasImageSource & { width: number; height: number };
+
 // Raster auf eine Leinwand zeichnen. Läuft nur im Browser.
-export function renderHalftone(img: CanvasImageSource & { width: number; height: number }, t: Tune, out: HTMLCanvasElement) {
+export function renderHalftone(img: Img, t: Tune, out: HTMLCanvasElement, light = false) {
   const { sx, sy, sw, sh } = crop(img.width, img.height, t);
   const { cell, cols, rows } = cellGrid(OUT_W, OUT_H, t.dot);
   // Durchschnitt je Zelle über ein verkleinertes Graubild
@@ -63,11 +72,29 @@ export function renderHalftone(img: CanvasImageSource & { width: number; height:
     for (let c = 0; c < cols; c++) {
       const i = (r * cols + c) * 4;
       const lum = (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
-      const rad = dotRadius(tone(lum, t.brightness, t.contrast), cell);
+      const rad = radiusFor(lum, t, cell, light);
       if (!rad) continue;
       ctx.beginPath();
       ctx.arc(c * cell + cell / 2, r * cell + cell / 2, rad, 0, Math.PI * 2);
       ctx.fill();
     }
   }
+}
+
+// Schwarz-Weiß ohne Raster (PRD 14.11: wählbare Option je Profil). Graues Foto im 4:5-Ausschnitt.
+export function renderBw(img: Img, t: Tune, out: HTMLCanvasElement) {
+  const { sx, sy, sw, sh } = crop(img.width, img.height, t);
+  out.width = OUT_W;
+  out.height = OUT_H;
+  const ctx = out.getContext("2d", { willReadFrequently: true })!;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+  const data = ctx.getImageData(0, 0, OUT_W, OUT_H);
+  const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const v = Math.round(tone((0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255, t.brightness, t.contrast) * 255);
+    px[i] = px[i + 1] = px[i + 2] = v;
+    px[i + 3] = 255;
+  }
+  ctx.putImageData(data, 0, 0);
 }

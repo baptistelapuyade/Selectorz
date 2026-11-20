@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useClosable } from "@/components/use-closable";
-import { AUTO, crop, renderHalftone, type Tune } from "@/lib/build/halftone";
+import type { DraftPhoto } from "@/lib/build/draft";
+import { AUTO, crop, renderBw, renderHalftone, type Tune } from "@/lib/build/halftone";
 
-type Props = { tint: string; dots: string; onUse: (dataUrl: string) => void; onClose: () => void };
+type Props = { look: "day" | "night"; tint: string; dots: string; start?: DraftPhoto["style"]; onUse: (photo: DraftPhoto) => void; onClose: () => void };
 
 const MAX_BYTES = 1024 * 1024;
 
-// Foto wählen → im Browser zum Punkteraster → nur das Raster wird übernommen (Plan M1b, Variante 1).
-export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
+// Foto wählen → im Browser zum Punkteraster (oder Schwarz-Weiß) → nur das Ergebnis wird übernommen (Plan M1b, Variante 1).
+export function PhotoDialog({ look, tint, dots, start = "dots", onUse, onClose: done }: Props) {
+  const [style, setStyle] = useState<DraftPhoto["style"]>(start);
   const { closing, close } = useClosable(done);
   const [img, setImg] = useState<ImageBitmap | null>(null);
   const [t, setT] = useState<Tune>(AUTO);
@@ -30,11 +32,16 @@ export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
     if (!img) return;
     const id = requestAnimationFrame(() => {
       canvas.current ??= document.createElement("canvas");
-      renderHalftone(img, t, canvas.current);
-      setMask(canvas.current.toDataURL("image/png"));
+      if (style === "bw") {
+        renderBw(img, t, canvas.current);
+        setMask(canvas.current.toDataURL("image/jpeg", 0.8));
+      } else {
+        renderHalftone(img, t, canvas.current, look === "night");
+        setMask(canvas.current.toDataURL("image/png"));
+      }
     });
     return () => cancelAnimationFrame(id);
-  }, [img, t]);
+  }, [img, t, style, look]);
 
   async function pick(file: File | undefined) {
     if (!file) return;
@@ -49,23 +56,39 @@ export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
     }
   }
 
+  // Bilder in der Endgröße erzeugen: Raster als zwei Masken (Day = Schatten, Night = Licht), sonst Schwarz-Weiß
   async function use() {
-    if (!canvas.current) return;
+    if (!img) return;
     setBusy(true);
-    const blob = (type: string, q?: number) => new Promise<Blob | null>((r) => canvas.current!.toBlob(r, type, q));
-    let out = await blob("image/png");
-    if (out && out.size > MAX_BYTES) out = await blob("image/webp", 0.92);
-    if (!out || out.size > MAX_BYTES) {
+    const c = document.createElement("canvas");
+    const encode = async (type: string, q?: number) => {
+      const b = await new Promise<Blob | null>((r) => c.toBlob(r, type, q));
+      return b && b.size <= MAX_BYTES ? b : null;
+    };
+    const toUrl = (b: Blob) =>
+      new Promise<string>((r) => {
+        const fr = new FileReader();
+        fr.onload = () => r(String(fr.result));
+        fr.readAsDataURL(b);
+      });
+    let photo: DraftPhoto | null = null;
+    if (style === "bw") {
+      renderBw(img, t, c);
+      const b = (await encode("image/webp", 0.85)) ?? (await encode("image/png"));
+      if (b) photo = { style: "bw", bw: await toUrl(b) };
+    } else {
+      renderHalftone(img, t, c, false);
+      const day = (await encode("image/png")) ?? (await encode("image/webp", 0.92));
+      renderHalftone(img, t, c, true);
+      const night = (await encode("image/png")) ?? (await encode("image/webp", 0.92));
+      if (day && night) photo = { style: "dots", day: await toUrl(day), night: await toUrl(night) };
+    }
+    if (!photo) {
       setBusy(false);
-      setError("The dots got too detailed. Make the dots a little bigger and try again.");
+      setError("The photo got too detailed. Make the dots a little bigger and try again.");
       return;
     }
-    const url = await new Promise<string>((r) => {
-      const fr = new FileReader();
-      fr.onload = () => r(String(fr.result));
-      fr.readAsDataURL(out);
-    });
-    onUse(url);
+    onUse(photo);
     close();
   }
 
@@ -95,7 +118,7 @@ export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
             {mask ? (
               <div
                 className="relative aspect-[4/5] w-full max-w-[384px] cursor-grab touch-none overflow-hidden rounded-[4px] active:cursor-grabbing"
-                style={{ background: tint }}
+                style={{ background: style === "bw" ? "#111111" : tint }}
                 onPointerDown={(e) => {
                   (e.target as HTMLElement).setPointerCapture(e.pointerId);
                   drag.current = { x: e.clientX, y: e.clientY, t };
@@ -113,12 +136,16 @@ export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
                 onPointerUp={() => (drag.current = null)}
                 onWheel={(e) => setT({ ...t, zoom: Math.min(2.5, Math.max(1, t.zoom - e.deltaY * 0.001)) })}
               >
-                <div
-                  role="img"
-                  aria-label="Your photo as halftone preview"
-                  className="absolute inset-0"
-                  style={{ background: dots, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}
-                />
+                {style === "bw" ? (
+                  <div role="img" aria-label="Your photo as black and white preview" className="absolute inset-0 bg-cover" style={{ backgroundImage: `url(${mask})` }} />
+                ) : (
+                  <div
+                    role="img"
+                    aria-label="Your photo as halftone preview"
+                    className="absolute inset-0"
+                    style={{ background: dots, WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}
+                  />
+                )}
                 <span className="label-mono pointer-events-none absolute inset-x-0 bottom-4 text-center text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">Drag to move · scroll to zoom</span>
               </div>
             ) : (
@@ -134,12 +161,34 @@ export function PhotoDialog({ tint, dots, onUse, onClose: done }: Props) {
 
           <aside className="flex flex-col gap-5 border-line p-4 md:border-l md:p-6">
             <p className="rounded-s bg-surface p-3 text-[13px] leading-[1.45] text-ink-2">
-              Only the dot version is saved. Your original photo stays on this device.
+              {style === "dots"
+                ? "Only the dot version is saved. Your original photo stays on this device."
+                : "A black and white copy is saved, cropped like you see it. The original stays on this device."}
             </p>
+            <div className="flex flex-col gap-2">
+              <span className="text-[14px] font-semibold" id="style-label">Style</span>
+              <span role="radiogroup" aria-labelledby="style-label" className="grid h-11 grid-cols-2 rounded-full bg-line-soft p-1">
+                {(["dots", "bw"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={style === v}
+                    onClick={() => setStyle(v)}
+                    className={`rounded-full text-[13px] font-semibold ${style === v ? "bg-ink text-night-t1" : "hover:bg-[rgba(17,17,17,0.06)]"}`}
+                  >
+                    {v === "dots" ? "Dot matrix" : "Black and white"}
+                  </button>
+                ))}
+              </span>
+              <span className="text-[12px] leading-[1.4] text-ink-3">
+                {style === "dots" ? "Your photo in the colours of your look. Recommended." : "Plain black and white, if the dots don't feel like you."}
+              </span>
+            </div>
             {error && <p key={error} role="alert" className="shake text-[13px] text-error-text">{error}</p>}
             {mask && (
               <>
-                {slider("dot", "Dot size", 6, 24, 1, `${t.dot} PX`)}
+                {style === "dots" && slider("dot", "Dot size", 6, 24, 1, `${t.dot} PX`)}
                 {slider("brightness", "Brightness", 0.6, 1.6, 0.05, t.brightness.toFixed(2))}
                 {slider("contrast", "Contrast", 0.8, 2.2, 0.05, t.contrast.toFixed(2))}
                 <button type="button" onClick={() => setT({ ...AUTO, x: t.x, y: t.y, zoom: t.zoom })} className="link-hover self-start text-[13px] font-semibold underline underline-offset-4">
