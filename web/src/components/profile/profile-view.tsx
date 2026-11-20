@@ -148,11 +148,15 @@ function InfoBar({ p, t }: { p: PublicProfile; t: T }) {
 }
 
 function Photo({ p, t }: { p: PublicProfile; t: T }) {
-  const src = photoUrl(p.photo_path);
+  const style = p.photo_style;
+  const src = photoUrl(p.photo_path, p.look, style);
   const initials = p.display_name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   return (
     <figure className="relative m-0 aspect-[4/5] overflow-hidden" style={{ background: t.htBg }}>
-      {src ? (
+      {src && style === "bw" ? (
+        // eslint-disable-next-line @next/next/no-img-element -- fertiges Schwarz-Weiß-Bild aus dem Speicher
+        <img src={src} alt={`${p.display_name}, black and white portrait`} className="h-full w-full object-cover" />
+      ) : src ? (
         // Gespeichert ist nur das Raster als Maske; die Farben kommen aus dem Look (kein Neu-Upload bei Look-Wechsel)
         <div
           role="img"

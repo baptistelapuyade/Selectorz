@@ -7,7 +7,7 @@ const full = (over: Partial<Draft> = {}): Draft => ({
   displayName: "Luma Reyes",
   handle: "lumareyes",
   genres: ["Deep House"],
-  photo: "data:image/png;base64,AAAA",
+  photo: { style: "dots", day: "data:image/png;base64,AAAA", night: "data:image/png;base64,BBBB" },
   tracks: [{ url: "https://soundcloud.com/luma/late-hours", title: "Late Hours Mix", artist: "Luma Reyes", provider: "soundcloud" }],
   ...over,
 });
@@ -64,7 +64,9 @@ describe("toPayload: was an den Server geht", () => {
     expect(p.genres).toHaveLength(3);
     expect(p.plays).toHaveLength(3);
   });
-  it("das Foto geht nicht im Payload mit (wird separat als Datei hochgeladen)", () => {
+  it("das Foto geht nicht im Payload mit (wird separat als Datei hochgeladen), nur der Stil", () => {
     expect(JSON.stringify(toPayload(full()))).not.toContain("data:image");
+    expect(toPayload(full()).photoStyle).toBe("dots");
+    expect(toPayload(full({ photo: { style: "bw", bw: "data:image/webp;base64,CC" } })).photoStyle).toBe("bw");
   });
 });

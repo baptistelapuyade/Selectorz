@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cellGrid, dotRadius, tone } from "./halftone";
+import { cellGrid, dotRadius, radiusFor, tone } from "./halftone";
 
 describe("tone: Helligkeit und Kontrast auf einen Grauwert (0 = schwarz, 1 = weiß)", () => {
   it("neutral lässt den Wert unverändert", () => {
@@ -45,5 +45,18 @@ describe("cellGrid: Raster über das Bild", () => {
   it("Zellgröße wird auf 4 bis 24 px begrenzt", () => {
     expect(cellGrid(800, 1000, 1).cell).toBe(4);
     expect(cellGrid(800, 1000, 99).cell).toBe(24);
+  });
+});
+
+describe("radiusFor: Day zeichnet Schatten, Night zeichnet Licht (kein Negativ)", () => {
+  const n = { brightness: 1, contrast: 1 };
+  it("Day: dunkle Stelle = großer Punkt", () => {
+    expect(radiusFor(0.1, n, 10, false)).toBeGreaterThan(radiusFor(0.9, n, 10, false));
+  });
+  it("Night: helle Stelle = großer Punkt", () => {
+    expect(radiusFor(0.9, n, 10, true)).toBeGreaterThan(radiusFor(0.1, n, 10, true));
+  });
+  it("Night ist das Gegenstück zu Day", () => {
+    expect(radiusFor(0.2, n, 10, true)).toBeCloseTo(radiusFor(0.8, n, 10, false));
   });
 });

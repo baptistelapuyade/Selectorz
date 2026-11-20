@@ -17,6 +17,7 @@ export type PublicProfile = {
   look: "day" | "night";
   accent: string;
   photo_path?: string | null;
+  photo_style?: "dots" | "bw";
   links: { label: string; url: string }[];
   sections: Section[];
 };
@@ -98,7 +99,10 @@ export function mmss(sec: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function photoUrl(path?: string | null) {
+export function photoUrl(path?: string | null, look: "day" | "night" = "day", style?: "dots" | "bw") {
   if (!path) return null;
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+  // Raster: für Night liegt daneben die Maske mit Punkten für Licht (<name>-night.png).
+  // Ohne Stil-Angabe (Profile aus der ersten Fassung vom 20.11.) gibt es nur eine Maske.
+  const file = style === "dots" && look === "night" ? path.replace(/\.(png|webp)$/, "-night.$1") : path;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${file}`;
 }

@@ -37,11 +37,15 @@ async function addSound(page: Page, genre = "Deep House") {
   await expect(sheet).toBeHidden();
 }
 
-async function addPhoto(page: Page) {
+async function addPhoto(page: Page, style: "dots" | "bw" = "dots") {
   await page.getByRole("button", { name: /add (your )?photo/i }).first().click();
   const dialog = page.getByRole("dialog", { name: "Your photo" });
   await dialog.getByLabel("Choose a photo").setInputFiles({ name: "portrait.jpg", mimeType: "image/jpeg", buffer: PORTRAIT });
   await expect(dialog.getByRole("img", { name: /halftone preview/i })).toBeVisible();
+  if (style === "bw") {
+    await dialog.getByRole("radio", { name: "Black and white" }).click();
+    await expect(dialog.getByRole("img", { name: /black and white preview/i })).toBeVisible();
+  }
   await dialog.getByRole("button", { name: /use this photo/i }).click();
   await expect(dialog).toBeHidden();
 }
@@ -109,6 +113,9 @@ test("1 · Eigener SoundCloud-Link bis live; danach ausgeloggt lesbar (A1, D24)"
   expect(rows).toHaveLength(1);
   expect(rows[0].status).toBe("published");
   expect(rows[0].name).toMatch(/\.png$/);
+  // Raster: daneben die Night-Maske (Punkte für Licht), damit ein Look-Wechsel kein neues Foto braucht
+  const night = await db.query("select 1 from storage.objects where bucket_id = 'avatars' and name = $1", [rows[0].name.replace(/\.png$/, "-night.png")]);
+  expect(night.rowCount).toBe(1);
 });
 
 test("2 · Pflichtangaben fehlen: klare Meldung, nichts geht verloren (A2)", async ({ page }) => {
@@ -137,12 +144,15 @@ test("3 · Abruf scheitert: Titel und Artist von Hand, Link bleibt (A5)", async 
   await page.getByRole("button", { name: /make my page/i }).click();
   await setNameAndHandle(page, `Mira ${t}`, handle);
   await addSound(page, "Dub Techno");
-  await addPhoto(page);
+  await addPhoto(page, "bw"); // Schwarz-Weiß statt Raster (PRD 14.11)
   await goLive(page);
 
   const { v, close } = await readAsVisitor(page, handle);
   await expect(v.getByText(`Hand Typed ${t}`).first()).toBeVisible();
+  await expect(v.getByRole("img", { name: /black and white portrait/i })).toBeVisible();
   await close();
+  const { rows } = await db.query("select published->>'photo_style' as style from public.profiles where handle = $1", [handle]);
+  expect(rows[0].style).toBe("bw");
 });
 
 test("4 · Ohne eigenen Mix: Tracks you love werden Set openers", async ({ page }) => {
@@ -163,11 +173,15 @@ test("4 · Ohne eigenen Mix: Tracks you love werden Set openers", async ({ page 
   await page.getByRole("button", { name: /make my page/i }).click();
 
   await setNameAndHandle(page, `Teo ${t}`, handle);
+  await page.getByRole("radio", { name: "Night" }).click();
   await addSound(page, "Disco");
   await addPhoto(page);
   await goLive(page);
 
   const { v, close } = await readAsVisitor(page, handle);
+  // Night: Akzent-Punkte für Licht auf Schwarz (eigene Maske), kein Negativ
+  const mask = await v.getByRole("img", { name: /halftone portrait/i }).evaluate((el) => getComputedStyle(el).maskImage || getComputedStyle(el).webkitMaskImage);
+  expect(mask).toContain("-night.");
   await expect(v.getByText("Set openers")).toBeVisible();
   await expect(v.getByText("Glass Floor")).toBeVisible();
   await expect(v.getByText(`Ostkreuz Dub ${t}`, { exact: false }).first()).toBeVisible();

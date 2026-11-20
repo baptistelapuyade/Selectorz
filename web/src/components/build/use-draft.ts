@@ -13,8 +13,13 @@ export function useDraft() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- einmaliges Laden aus dem Browser nach dem ersten Rendern
-      if (raw) setDraft({ ...emptyDraft(), ...JSON.parse(raw) });
+      if (raw) {
+        const saved = JSON.parse(raw);
+        // Fotos aus einer früheren Fassung (nur eine Maske) neu wählen lassen
+        if (saved.photo && typeof saved.photo !== "object") saved.photo = null;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- einmaliges Laden aus dem Browser nach dem ersten Rendern
+        setDraft({ ...emptyDraft(), ...saved });
+      }
     } catch {}
     setReady(true);
   }, []);

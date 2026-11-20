@@ -13,11 +13,11 @@ const openers = (n: number) => ({
   content: { tracks: Array.from({ length: n }, (_, i) => ({ ...track(i + 1), provider: "soundcloud" })) },
 });
 
-type Args = { handle: string; name?: string; genres?: string[]; photo?: string | null; section?: unknown; look?: string; plays?: string[]; city?: string };
+type Args = { handle: string; name?: string; genres?: string[]; photo?: string | null; section?: unknown; look?: string; plays?: string[]; city?: string; style?: string };
 
 function create(user: string, a: Args) {
   return as(user, (q) =>
-    q("select * from public.create_and_publish_profile($1, $2, $3, $4, $5, $6, $7, $8)", [
+    q("select * from public.create_and_publish_profile($1, $2, $3, $4, $5, $6, $7, $8, $9)", [
       a.handle,
       a.name ?? "Luma Reyes",
       a.genres ?? ["Deep House"],
@@ -26,6 +26,7 @@ function create(user: string, a: Args) {
       a.look ?? "day",
       a.photo === undefined ? `${user}/avatar.png` : a.photo,
       JSON.stringify(a.section ?? mix()),
+      a.style ?? "dots",
     ]),
   );
 }
@@ -45,6 +46,7 @@ describe("create_and_publish_profile: Profil in einem Schritt anlegen und veröf
       plays: ["Vinyl"],
       look: "day",
       photo_path: `${u}/avatar.png`,
+      photo_style: "dots",
       sections: [{ kind: "mix", title: "My sound" }],
     });
   });
@@ -54,6 +56,13 @@ describe("create_and_publish_profile: Profil in einem Schritt anlegen und veröf
     const { rows } = await create(u, { handle: handle(), section: openers(3) });
     expect(rows[0].published.sections[0].kind).toBe("set_openers");
     expect(rows[0].published.sections[0].content.tracks).toHaveLength(3);
+  });
+
+  it("Foto-Stil Schwarz-Weiß wird übernommen; unbekannte Stile werden abgewiesen", async () => {
+    const u = await newUser();
+    await expectError(create(u, { handle: handle(), style: "sepia" }), /invalid_photo/);
+    const { rows } = await create(u, { handle: handle(), style: "bw", photo: `${u}/avatar-1.webp` });
+    expect(rows[0].published).toMatchObject({ photo_style: "bw", photo_path: `${u}/avatar-1.webp` });
   });
 
   it("Look Night setzt die passende Standard-Akzentfarbe", async () => {
@@ -95,7 +104,7 @@ describe("create_and_publish_profile: Profil in einem Schritt anlegen und veröf
 
   it("ohne Anmeldung geht nichts", async () => {
     await expectError(
-      as(null, (q) => q("select public.create_and_publish_profile('abc', 'x', '{a}', '{}', '', 'day', 'x/y.png', '{}')")),
+      as(null, (q) => q("select public.create_and_publish_profile('abc', 'x', '{a}', '{}', '', 'day', 'x/y.png', '{}', 'dots')")),
       /permission denied|not_authenticated/,
     );
   });

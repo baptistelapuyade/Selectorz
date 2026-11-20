@@ -3,6 +3,8 @@ import type { Provider, Track } from "@/lib/profile";
 
 // Entwurf beim Profil-Bau. Liegt bis zum Login nur im Browser (localStorage).
 export type DraftTrack = Track & { provider: Provider; fetched?: "ok" | "failed" };
+// Foto: Punkteraster (zwei Masken, Day = Schatten, Night = Licht) oder Schwarz-Weiß. Nie das Original.
+export type DraftPhoto = { style: "dots"; day: string; night: string } | { style: "bw"; bw: string };
 export type Draft = {
   path: "mix" | "tracks";       // eigener Mix oder „Tracks you love“
   step: "link" | "version";
@@ -15,7 +17,7 @@ export type Draft = {
   plays: string[];
   city: string;
   look: "day" | "night";
-  photo: string | null;         // fertiges Raster als PNG-Data-URL, nie das Original
+  photo: DraftPhoto | null;     // Data-URLs der fertigen Bilder
 };
 
 export const emptyDraft = (path: Draft["path"] = "mix"): Draft => ({
@@ -43,6 +45,7 @@ export type Payload = {
   plays: string[];
   city: string;
   look: "day" | "night";
+  photoStyle: "dots" | "bw";
   section: { kind: "mix" | "set_openers"; title: string; content: Record<string, unknown> };
 };
 
@@ -67,6 +70,7 @@ export function toPayload(d: Draft): Payload {
     plays: d.plays.slice(0, 3),
     city: d.city.trim().slice(0, 60),
     look: d.look,
+    photoStyle: d.photo?.style ?? "dots",
     section,
   };
 }

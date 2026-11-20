@@ -98,13 +98,23 @@ export async function publishProfile(form: FormData): Promise<PublishResult> {
     return { ok: false, error: "Something went wrong on our side. Try again in a moment." };
   }
 
-  const photo = form.get("photo");
-  if (!(photo instanceof File) || !["image/png", "image/webp"].includes(photo.type) || photo.size > 1024 * 1024) {
-    return { ok: false, error: ERRORS.invalid_photo, code: "invalid_photo" };
+  // Raster: zwei Masken (Day/Night) mit gleichem Namen, Night mit „-night“. Schwarz-Weiß: ein Bild.
+  const style = payload.photoStyle === "bw" ? "bw" : "dots";
+  const okFile = (f: FormDataEntryValue | null): f is File =>
+    f instanceof File && ["image/png", "image/webp"].includes(f.type) && f.size > 0 && f.size <= 1024 * 1024;
+  const files = style === "dots" ? [form.get("photo_day"), form.get("photo_night")] : [form.get("photo_bw")];
+  if (!files.every(okFile)) return { ok: false, error: ERRORS.invalid_photo, code: "invalid_photo" };
+  const base = `${uid}/avatar-${randomUUID().slice(0, 8)}`;
+  const ext = (f: File) => (f.type === "image/webp" ? "webp" : "png");
+  const paths = files.map((f, i) => `${base}${i === 1 ? "-night" : ""}.${ext(f as File)}`);
+  for (const [i, f] of (files as File[]).entries()) {
+    const up = await supabase.storage.from("avatars").upload(paths[i], f, { contentType: f.type, upsert: false });
+    if (up.error) {
+      await supabase.storage.from("avatars").remove(paths.slice(0, i));
+      return { ok: false, error: ERRORS.invalid_photo, code: "invalid_photo" };
+    }
   }
-  const path = `${uid}/avatar-${randomUUID().slice(0, 8)}.${photo.type === "image/webp" ? "webp" : "png"}`;
-  const up = await supabase.storage.from("avatars").upload(path, photo, { contentType: photo.type, upsert: false });
-  if (up.error) return { ok: false, error: ERRORS.invalid_photo, code: "invalid_photo" };
+  const path = paths[0];
 
   const { error } = await supabase.rpc("create_and_publish_profile", {
     p_handle: payload.handle,
@@ -115,9 +125,10 @@ export async function publishProfile(form: FormData): Promise<PublishResult> {
     p_look: payload.look,
     p_photo_path: path,
     p_section: payload.section,
+    p_photo_style: style,
   });
   if (error) {
-    await supabase.storage.from("avatars").remove([path]); // kein verwaistes Foto
+    await supabase.storage.from("avatars").remove(paths); // keine verwaisten Fotos
     const code = Object.keys(ERRORS).find((k) => error.message.includes(k));
     return { ok: false, error: code ? ERRORS[code] : "Something went wrong on our side. Try again in a moment.", code };
   }
