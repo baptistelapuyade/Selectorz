@@ -117,3 +117,27 @@ test("7 · Datenschutz von jeder Seite mit einem Klick", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Privacy", exact: true })).toBeVisible();
   }
 });
+
+test("8 · Feedback-Panel gleitet ein und aus statt hart zu springen", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Feedback" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  // Einblenden läuft als Animation (Motion-Muster 03)
+  const anim = await dialog.evaluate((el) => getComputedStyle(el).animationName);
+  expect(anim).toMatch(/sheet-in|panel-in/);
+  // Schließen: erst Ausblend-Zustand, danach weg
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".closing")).toHaveCount(1);
+  await expect(dialog).toHaveCount(0);
+});
+
+test("9 · Bei reduzierter Bewegung schließt das Panel sofort", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Feedback" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".closing")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});

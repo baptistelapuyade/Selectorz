@@ -27,7 +27,7 @@ export default function ImprintPage() {
         </section>
         <section className="flex flex-col gap-1 text-[16px] leading-[1.5]">
           <span className="label-mono pb-2 text-ink-3">Contact</span>
-          <a href="mailto:hello@selectorz.art" className="font-semibold underline underline-offset-4">hello@selectorz.art</a>
+          <a href="mailto:hello@selectorz.art" className="font-semibold underline underline-offset-4 link-hover">hello@selectorz.art</a>
         </section>
         <section className="flex flex-col gap-1 text-[16px] leading-[1.5]">
           <span className="label-mono pb-2 text-ink-3">Responsible for content (§ 18 Abs. 2 MStV)</span>

@@ -26,7 +26,7 @@ async function Confirm() {
 export default function DeletePage() {
   return (
     <main className="flex flex-1 flex-col gap-8 px-4 py-6 md:px-20 md:py-10">
-      <Link href="/settings" className="text-[15px] font-semibold underline underline-offset-4">← Settings</Link>
+      <Link href="/settings" className="text-[15px] font-semibold underline underline-offset-4 link-hover">← Settings</Link>
       <div className="flex max-w-[560px] flex-col gap-6">
         <h1 className="text-[44px] font-extrabold leading-[0.9] tracking-[-0.05em] md:text-[64px]">Delete your account?</h1>
         <ol className="flex flex-col">
@@ -40,7 +40,7 @@ export default function DeletePage() {
         <Suspense fallback={null}>
           <Confirm />
         </Suspense>
-        <Link href="/settings" className="self-center text-[15px] font-semibold underline underline-offset-4">Keep my account</Link>
+        <Link href="/settings" className="self-center text-[15px] font-semibold underline underline-offset-4 link-hover">Keep my account</Link>
       </div>
     </main>
   );

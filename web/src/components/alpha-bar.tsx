@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { submitFeedback, type FeedbackState } from "@/app/feedback/actions";
 import { track } from "@/components/analytics";
+import { useClosable } from "@/components/use-closable";
 
 const KINDS = [
   { id: "bug", label: "Bug" },
@@ -34,7 +35,7 @@ export function FeedbackButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`ml-auto h-6 shrink-0 rounded-full px-3 font-sans text-[12px] font-semibold tracking-normal text-ink ${open ? "bg-lime" : "bg-night-t1"}`}
+        className={`ml-auto h-6 shrink-0 rounded-full px-3 font-sans text-[12px] font-semibold tracking-normal text-ink hover:bg-lime ${open ? "bg-lime" : "bg-night-t1"}`}
       >
         Feedback
       </button>
@@ -45,7 +46,8 @@ export function FeedbackButton() {
 
 const initial: FeedbackState = { status: "idle" };
 
-function FeedbackDialog({ onClose }: { onClose: () => void }) {
+function FeedbackDialog({ onClose: done }: { onClose: () => void }) {
+  const { closing, close: onClose } = useClosable(done);
   const [state, action, pending] = useActionState(submitFeedback, initial);
   const [kind, setKind] = useState("bug");
   const pathname = usePathname();
@@ -64,25 +66,25 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
 
   const sent = state.status === "sent";
   return (
-    <div className="fixed inset-0 z-50">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(17,17,17,0.55)]" />
+    <div className={`fixed inset-0 z-50 font-sans text-[16px] font-normal normal-case tracking-normal text-ink ${closing ? "closing" : ""}`}>
+      <button aria-label="Close" onClick={onClose} className="scrim absolute inset-0 bg-[rgba(17,17,17,0.55)] active:scale-100" />
       <div
         ref={box}
         role="dialog"
         aria-modal="true"
         aria-labelledby="fb-title"
-        className={`absolute inset-x-0 bottom-0 flex max-h-[92dvh] md:max-h-none flex-col gap-4 overflow-y-auto rounded-t-[22px] px-4 pb-6 pt-3 md:inset-y-0 md:left-auto md:right-0 md:w-[440px] md:rounded-none md:px-8 md:py-7 md:shadow-modal ${sent ? "bg-night-bg text-night-t1" : "bg-bg text-ink"}`}
+        className={`sheet absolute inset-x-0 bottom-0 flex max-h-[92dvh] md:max-h-none flex-col gap-4 overflow-y-auto rounded-t-[22px] px-4 pb-6 pt-3 md:inset-y-0 md:left-auto md:right-0 md:w-[440px] md:rounded-none md:px-8 md:py-7 md:shadow-modal ${sent ? "bg-night-bg text-night-t1" : "bg-bg text-ink"}`}
       >
         <span className="mx-auto h-1 w-10 rounded-full bg-field-border md:hidden" />
-        <button onClick={onClose} aria-label="Close feedback" className="hidden h-10 w-10 items-center justify-center self-end rounded-full border-[1.5px] border-ink md:flex">
+        <button onClick={onClose} aria-label="Close feedback" className="hidden h-10 w-10 items-center justify-center self-end rounded-full border-[1.5px] border-ink hover:bg-ink hover:text-night-t1 md:flex">
           ✕
         </button>
         {sent ? (
-          <div className="flex flex-col gap-4">
+          <div className="appear flex flex-col gap-4">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-lime text-ink">✓</span>
             <h2 id="fb-title" className="text-[34px] font-extrabold leading-[0.92] tracking-[-0.045em]">Got it.<br />Thank you.</h2>
             <p className="text-[15px] leading-[1.45] text-night-t2">Baptiste reads every note. If you said yes to email, you might hear back.</p>
-            <button onClick={onClose} className="h-[50px] rounded-full bg-night-t1 text-[15px] font-semibold text-ink">Back to the page</button>
+            <button onClick={onClose} className="h-[50px] rounded-full bg-night-t1 text-[15px] font-semibold text-ink hover:bg-lime">Back to the page</button>
           </div>
         ) : (
           <form action={action} className="flex flex-col gap-4">
@@ -98,7 +100,7 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
                   role="radio"
                   aria-checked={kind === k.id}
                   onClick={() => setKind(k.id)}
-                  className={`h-9 rounded-full px-4 text-[14px] font-semibold ${kind === k.id ? "bg-ink text-night-t1" : "border-[1.5px] border-chip-border"}`}
+                  className={`h-9 rounded-full px-4 text-[14px] font-semibold ${kind === k.id ? "bg-ink text-night-t1" : "chip border-[1.5px] border-chip-border"}`}
                 >
                   {k.label}
                 </button>
@@ -116,7 +118,7 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
                 required
                 maxLength={3000}
                 rows={4}
-                className="rounded-s border border-field-border bg-surface px-3.5 py-3 text-[16px] font-normal leading-[1.4] outline-none focus:border-2 focus:border-ink"
+                className="field rounded-s border border-field-border bg-surface px-3.5 py-3 text-[16px] font-normal leading-[1.4] outline-none focus:border-2 focus:border-ink"
               />
             </label>
             <span className="flex items-center gap-2 text-[12px] text-ink-3">
@@ -126,14 +128,14 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
               <input type="checkbox" name="contact_ok" defaultChecked className="h-5 w-5 accent-ink" />
               You can email me about this
             </label>
-            {state.error && <p className="text-[13px] text-error-text">{state.error}</p>}
+            {state.error && <p key={state.error} className="shake text-[13px] text-error-text">{state.error}</p>}
             <button
               type="submit"
               disabled={pending}
-              className="flex h-[58px] items-center justify-between rounded-full bg-ink px-6 text-[16px] font-semibold text-night-t1 shadow-cta disabled:bg-field-border disabled:shadow-none"
+              className="cta flex h-[58px] items-center justify-between rounded-full bg-ink px-6 text-[16px] font-semibold text-night-t1 shadow-cta disabled:bg-field-border disabled:shadow-none"
             >
               <span>{pending ? "Sending…" : "Send feedback"}</span>
-              <span aria-hidden>→</span>
+              <span aria-hidden className="cta-arrow">→</span>
             </button>
           </form>
         )}
