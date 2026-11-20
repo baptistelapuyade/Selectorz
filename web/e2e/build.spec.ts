@@ -76,7 +76,7 @@ test("1 · Eigener SoundCloud-Link bis live; danach ausgeloggt lesbar (A1, D24)"
 
   const started = Date.now();
   await pasteLink(page, `https://soundcloud.com/luma-reyes/late-hours-${t}`);
-  await expect(page.getByText(`Late Hours ${t}`, { exact: false })).toBeVisible();
+  await expect(page.getByText(`Late Hours ${t}`, { exact: false }).first()).toBeVisible();
   expect(Date.now() - started).toBeLessThan(5_000); // erste Vorschau in wenigen Sekunden
   await expect(page.getByText(/Your DJ name/)).toContainText("Luma Reyes"); // Vorschlag aus dem Uploader-Namen
   await page.getByRole("button", { name: /make my page/i }).click();
@@ -116,7 +116,7 @@ test("2 · Pflichtangaben fehlen: klare Meldung, nichts geht verloren (A2)", asy
   await page.getByRole("button", { name: /make my page/i }).click();
   await setNameAndHandle(page, `Kofi ${t}`, `kofi${t}`);
   await page.getByRole("button", { name: /save my page/i }).click();
-  await expect(page.getByRole("alert")).toContainText(/add a photo and your sound/i);
+  await expect(page.getByText(/add a photo and your sound first/i)).toBeVisible();
   await expect(page.getByRole("dialog", { name: /one last step/i })).toBeHidden();
 
   // Neu laden: Entwurf ist noch da (liegt bis zum Login im Browser).
@@ -152,7 +152,7 @@ test("4 · Ohne eigenen Mix: Tracks you love werden Set openers", async ({ page 
   await expect(page.getByRole("heading", { name: /start with tracks you love/i })).toBeVisible();
   await page.getByLabel("Track 1").fill(`https://soundcloud.com/halden/ostkreuz-dub-${t}`);
   await page.getByLabel("Track 1").blur();
-  await expect(page.getByText(`Ostkreuz Dub ${t}`, { exact: false })).toBeVisible();
+  await expect(page.getByText(`Ostkreuz Dub ${t}`, { exact: false }).first()).toBeVisible();
   // Bandcamp hat kein oEmbed: Titel und Artist von Hand
   await page.getByLabel("Track 2").fill(`https://teodora.bandcamp.com/track/glass-floor-${t}`);
   await page.getByLabel("Track 2").blur();

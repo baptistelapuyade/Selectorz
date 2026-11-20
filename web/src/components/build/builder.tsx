@@ -313,7 +313,7 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
 
   return (
     <>
-      <main className="grid flex-1 gap-8 px-4 pb-10 pt-6 md:grid-cols-[420px_minmax(0,1fr)] md:gap-20 md:px-20 md:pt-11">
+      <main className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-8 px-4 pb-10 pt-6 md:grid-cols-[420px_minmax(0,1fr)] md:gap-20 md:px-20 md:pt-11">
         <div className="flex flex-col gap-4">
           <button type="button" onClick={() => update({ step: "link" })} className="link-hover self-start text-[13px] font-semibold underline underline-offset-4">← Back to your link</button>
           <span className="label-mono hidden text-ink-3 md:block">Step 2</span>
@@ -396,7 +396,7 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
               )}
             </button>
             <span className="flex min-w-0 flex-col gap-1.5">
-              <span className="break-words text-[44px] font-extrabold leading-[0.88] tracking-[-0.055em] md:text-[64px]">{d.displayName || "Your name"}</span>
+              <span className="text-[44px] font-extrabold [overflow-wrap:anywhere] leading-[0.88] tracking-[-0.055em] md:text-[64px]">{d.displayName || "Your name"}</span>
               <span className="truncate text-[15px] text-ink-3">{SITE}/{d.handle || "…"}</span>
             </span>
           </div>
