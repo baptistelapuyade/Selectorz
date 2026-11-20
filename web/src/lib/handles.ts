@@ -1,8 +1,8 @@
-// Gleiche Liste wie private.handle_ok in der Datenbank (Migration core_model).
+// Gleiche Liste wie private.handle_ok in der Datenbank (Migration profile_create).
 export const RESERVED = new Set([
-  "admin", "api", "app", "auth", "chain", "chains", "help", "home", "invite", "licenses", "login", "logout", "mix",
-  "privacy", "profile", "report", "selection", "selections", "selectorz", "settings", "support", "terms", "www",
-  "imprint", "preview", "feedback",
+  "admin", "api", "app", "auth", "build", "chain", "chains", "create", "feedback", "help", "home", "imprint", "invite",
+  "licenses", "login", "logout", "mix", "new", "preview", "privacy", "profile", "report", "selection", "selections",
+  "selectorz", "settings", "start", "support", "terms", "www",
 ]);
 
 export const HANDLE_RE = /^[a-z0-9](?:[a-z0-9_.]{1,28}[a-z0-9])$/;
