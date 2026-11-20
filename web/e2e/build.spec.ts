@@ -237,3 +237,9 @@ test("7 · Statistik: profile_published ohne Mail-Adresse und ohne Musik-Link", 
   expect(all).not.toContain(email);
   expect(all).not.toContain(`stat-${t}`);
 });
+
+test("8 · Profil-Link statt Mix: klare Meldung, kein Profilname als Titel", async ({ page }) => {
+  await pasteLink(page, "https://soundcloud.com/baptistelapuyade");
+  await expect(page.getByText(/that's a profile link/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /make my page/i })).toBeDisabled();
+});

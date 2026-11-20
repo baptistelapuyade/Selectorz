@@ -39,7 +39,7 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
           </header>
 
           {/* Hero: Name und Info-Leiste links, Foto rechts (Desktop); untereinander (mobil) */}
-          <section className="md:mt-8 md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)]">
+          <section className="md:mt-8 md:grid md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
             <div className="flex min-w-0 flex-col justify-between gap-5 md:gap-14">
               <div className="flex flex-col gap-4 px-4 pt-6 md:px-0 md:pr-10 md:pt-0">
                 <p className="hidden font-mono text-[12px] tracking-[0.08em] md:block" style={{ color: t.muted }}>@{p.handle.toUpperCase()} · DJ · SELECTOR</p>
@@ -152,7 +152,7 @@ function Photo({ p, t }: { p: PublicProfile; t: T }) {
   const src = photoUrl(p.photo_path, p.look, style);
   const initials = p.display_name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   return (
-    <figure className="relative m-0 aspect-[4/5] overflow-hidden" style={{ background: t.htBg }}>
+    <figure className="relative m-0 aspect-[4/5] overflow-hidden md:self-end" style={{ background: t.htBg }}>
       {src && style === "bw" ? (
         // eslint-disable-next-line @next/next/no-img-element -- fertiges Schwarz-Weiß-Bild aus dem Speicher
         <img src={src} alt={`${p.display_name}, black and white portrait`} className="h-full w-full object-cover" />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanTrackUrl, oembedEndpoint } from "./links";
+import { cleanTrackUrl, isProfileLink, oembedEndpoint } from "./links";
 
 describe("cleanTrackUrl: Link aus dem Eingabefeld prüfen und bereinigen", () => {
   it("nimmt SoundCloud ohne https:// und ohne www an", () => {
@@ -49,5 +49,24 @@ describe("oembedEndpoint: nur offizielle, feste Adressen (kein Scraping, kein fr
   it("gibt für Bandcamp und andere nichts zurück", () => {
     expect(oembedEndpoint("bandcamp", "https://x.bandcamp.com/track/y")).toBeNull();
     expect(oembedEndpoint("other", "https://example.org")).toBeNull();
+  });
+});
+
+describe("isProfileLink: Profil statt Mix eingefügt", () => {
+  it("SoundCloud-Profil und Profil-Reiter", () => {
+    expect(isProfileLink("https://soundcloud.com/baptistelapuyade", "soundcloud")).toBe(true);
+    expect(isProfileLink("https://soundcloud.com/baptistelapuyade/tracks", "soundcloud")).toBe(true);
+    expect(isProfileLink("https://soundcloud.com/baptistelapuyade/late-hours", "soundcloud")).toBe(false);
+    expect(isProfileLink("https://soundcloud.com/baptistelapuyade/sets/warmups", "soundcloud")).toBe(false);
+    expect(isProfileLink("https://on.soundcloud.com/AbC12", "soundcloud")).toBe(false); // Kurzlink auf einen Track
+  });
+  it("Mixcloud- und YouTube-Profile", () => {
+    expect(isProfileLink("https://www.mixcloud.com/luma/", "mixcloud")).toBe(true);
+    expect(isProfileLink("https://www.mixcloud.com/luma/paloma-bar/", "mixcloud")).toBe(false);
+    expect(isProfileLink("https://www.youtube.com/@halden", "youtube")).toBe(true);
+    expect(isProfileLink("https://www.youtube.com/watch?v=abc", "youtube")).toBe(false);
+  });
+  it("Bandcamp und andere: keine Prüfung", () => {
+    expect(isProfileLink("https://halden.bandcamp.com/", "bandcamp")).toBe(false);
   });
 });
