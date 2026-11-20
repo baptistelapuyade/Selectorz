@@ -84,7 +84,8 @@ test("1 · Eigener SoundCloud-Link bis live; danach ausgeloggt lesbar (A1, D24)"
   await expect(page.getByRole("heading", { name: /here's your first version/i })).toBeVisible();
   await setNameAndHandle(page, `Luma ${t}`, handle);
   await page.getByLabel("Based").fill("Berlin");
-  await page.getByRole("checkbox", { name: "Vinyl", exact: true }).check();
+  await page.getByText("Vinyl", { exact: true }).click(); // Chip = Label um eine versteckte Checkbox
+  await expect(page.getByRole("checkbox", { name: "Vinyl", exact: true })).toBeChecked();
   await addSound(page);
   await addPhoto(page);
   await goLive(page);
