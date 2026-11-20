@@ -15,22 +15,29 @@ const KINDS = [
 // Alpha-Streifen auf jeder Seite (Board „Alpha · Feedback“). Ein schwarzer Balken,
 // Feedback als Sheet (mobil) bzw. Panel von rechts (Desktop).
 export function AlphaBar() {
+  // Profile haben ein Laufband; dort sitzt Alpha + Feedback im Laufband (eigenes Layout, ein Balken pro Seite)
+  return (
+    <div className="flex h-8 items-center gap-3 bg-ink pl-4 pr-2 font-mono text-[10px] tracking-[0.08em] text-night-t1 md:pl-10">
+      <span className="text-lime">ALPHA</span>
+      <span className="truncate text-night-t2">
+        <span className="hidden md:inline">YOU&apos;RE TESTING AN EARLY VERSION. </span>SOMETHING OFF? TELL US.
+      </span>
+      <FeedbackButton />
+    </div>
+  );
+}
+
+export function FeedbackButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="flex h-8 items-center gap-3 bg-ink pl-4 pr-2 font-mono text-[10px] tracking-[0.08em] text-night-t1 md:pl-10">
-        <span className="text-lime">ALPHA</span>
-        <span className="truncate text-night-t2">
-          <span className="hidden md:inline">YOU&apos;RE TESTING AN EARLY VERSION. </span>SOMETHING OFF? TELL US.
-        </span>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className={`ml-auto h-6 shrink-0 rounded-full px-3 font-sans text-[12px] font-semibold tracking-normal text-ink ${open ? "bg-lime" : "bg-night-t1"}`}
-        >
-          Feedback
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`ml-auto h-6 shrink-0 rounded-full px-3 font-sans text-[12px] font-semibold tracking-normal text-ink ${open ? "bg-lime" : "bg-night-t1"}`}
+      >
+        Feedback
+      </button>
       {open && <FeedbackDialog onClose={() => setOpen(false)} />}
     </>
   );

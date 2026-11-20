@@ -7,6 +7,7 @@ export const fresh = (tag: string) => `e2e-${tag}-${Date.now()}-${Math.floor(Mat
 export const db = new pg.Pool({
   connectionString: process.env.DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
   max: 2,
+  allowExitOnIdle: true, // von mehreren Testdateien geteilt; nicht einzeln schließen
 });
 
 export async function login(page: Page, email: string, next = "/home") {
