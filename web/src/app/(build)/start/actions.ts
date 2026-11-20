@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { updateTag } from "next/cache";
-import { cleanTrackUrl, oembedEndpoint } from "@/lib/build/links";
+import { cleanTrackUrl, isProfileLink, oembedEndpoint } from "@/lib/build/links";
 import { mapOembed, type TrackMeta } from "@/lib/build/oembed";
 import type { Payload } from "@/lib/build/draft";
 import type { Provider } from "@/lib/profile";
@@ -24,6 +24,9 @@ function fakeMeta(url: string): TrackMeta | null {
 export async function resolveLink(input: string): Promise<Resolved> {
   const link = cleanTrackUrl(String(input ?? ""));
   if (!link) return { ok: false, error: "That doesn't look like a link. Copy it from SoundCloud and paste it here." };
+  if (isProfileLink(link.url, link.provider)) {
+    return { ok: false, error: "That's a profile link. Open one of your mixes or tracks and copy its link." };
+  }
   const endpoint = oembedEndpoint(link.provider, link.url);
   if (!endpoint) return { ok: true, ...link, meta: null };
   if (process.env.OEMBED_FAKE === "1") return { ok: true, ...link, meta: fakeMeta(link.url) };
