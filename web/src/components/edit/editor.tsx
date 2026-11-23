@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { discardChanges, publishChanges, saveDraft, takeOffline, uploadPhoto } from "@/app/(build)/edit/actions";
 import { track } from "@/components/analytics";
 import { PhotoDialog } from "@/components/build/photo-dialog";
@@ -9,18 +9,22 @@ import { ProfileView } from "@/components/profile/profile-view";
 import type { DraftPhoto } from "@/lib/build/draft";
 import { MAX_SECTIONS, missing, missingMessage, move, newSection, sameDraft, summary, toPublic, type EditDraft, type EditSection, type EditState } from "@/lib/edit/model";
 import { lookTokens, photoUrl, SECTION_TITLES } from "@/lib/profile";
+import { useGigToday } from "@/components/use-gig-today";
+import { gigDate, upcoming, type Gig } from "@/lib/gigs";
 import { AddSectionPanel } from "./add-section-panel";
+import { GigStoryDialog } from "./gig-story-dialog";
+import { GigsPanel } from "./gigs-panel";
 import { BasicsPanel } from "./basics-panel";
 import { OfflineDialog } from "./offline-dialog";
 import { Arrow, Grip, useDragList } from "./panel";
 import { SectionPanel } from "./section-panel";
 
-type Open = null | { kind: "basics" } | { kind: "photo" } | { kind: "add" } | { kind: "offline" } | { kind: "section"; key: string };
+type Open = null | { kind: "basics" } | { kind: "photo" } | { kind: "add" } | { kind: "offline" } | { kind: "gigs" } | { kind: "section"; key: string };
 type Save = "saved" | "saving" | "error";
 
 // Profil bearbeiten nach dem ersten Veröffentlichen (M1cEditor). Alles landet im Entwurf;
 // die öffentliche Seite ändert sich erst mit „Publish changes“.
-export function Editor({ initial }: { initial: EditState }) {
+export function Editor({ initial, initialGigs = [] }: { initial: EditState; initialGigs?: Gig[] }) {
   const [st, setSt] = useState(initial);
   const [d, setD] = useState<EditDraft>(initial.draft);
   const [open, setOpen] = useState<Open>(null);
@@ -29,6 +33,8 @@ export function Editor({ initial }: { initial: EditState }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [gigs, setGigs] = useState<Gig[]>(initialGigs);
+  const [story, setStory] = useState<null | { kind: "one" | "all"; gig?: Gig }>(null);
   const seq = useRef(0);
 
   const set = (patch: Partial<EditDraft>) => {
@@ -126,6 +132,13 @@ export function Editor({ initial }: { initial: EditState }) {
   const pub = toPublic(st.handle, d);
   const pubKeys = d.sections.filter((s) => s.visible && pub.sections.some((p) => p.content === s.content)).map((s) => s.key);
 
+  const today = useGigToday();
+  const nextGigs = useMemo(() => (today ? upcoming(gigs, today) : []), [gigs, today]);
+  const storyBase = useMemo(
+    () => ({ name: d.display_name, genres: d.genres, handle: st.handle, look: d.look, accent: d.accent, photo: photoUrl(d.photo_path, d.look, d.photo_style), photoStyle: d.photo_style }),
+    [d.display_name, d.genres, st.handle, d.look, d.accent, d.photo_path, d.photo_style],
+  );
+
   const statusText = st.status === "withdrawn" ? "OFFLINE" : changed ? "LIVE · CHANGES NOT PUBLISHED" : "LIVE · UP TO DATE";
   const statusDot = st.status === "withdrawn" ? "#8A8A86" : changed ? "#F0532A" : "#2E8B57";
 
@@ -186,6 +199,29 @@ export function Editor({ initial }: { initial: EditState }) {
               <Chip label="Based">{d.city || "—"}</Chip>
               <Chip label="Plays">{d.plays.join(" · ") || "—"}</Chip>
             </div>
+          </section>
+
+          {/* Next gigs: gehen sofort live (ohne Publish) */}
+          <section aria-label="Next gigs" className="flex items-center gap-3 rounded-[12px] border border-line bg-surface py-2.5 pl-3.5 pr-2.5">
+            {nextGigs[0] ? (
+              <span className="flex h-11 w-11 flex-none flex-col items-center justify-center rounded-[8px] bg-ink leading-none text-night-t1">
+                <span className="font-mono text-[8px] tracking-[0.08em] opacity-70">{gigDate(nextGigs[0].date).wd}</span>
+                <span className="text-[17px] font-extrabold tracking-[-0.04em]">{gigDate(nextGigs[0].date).day}</span>
+              </span>
+            ) : (
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[8px] bg-line-soft text-[18px]" aria-hidden>+</span>
+            )}
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-semibold">
+                Next gigs <span className="font-normal text-ink-3">· {nextGigs.length ? `${nextGigs.length} coming up` : "none yet"}</span>
+              </span>
+              <span className="truncate text-[12px] text-ink-3">
+                {nextGigs[0] ? `Next: ${nextGigs[0].event} · ${nextGigs[0].city}` : "Where people can hear you next."}
+              </span>
+            </span>
+            <button type="button" onClick={() => setOpen({ kind: "gigs" })} className="h-9 flex-none rounded-full bg-ink px-3.5 text-[13px] font-semibold text-night-t1">
+              {nextGigs.length ? "Edit gigs" : "+ Add gig"}
+            </button>
           </section>
 
           {/* Sections */}
@@ -277,7 +313,9 @@ export function Editor({ initial }: { initial: EditState }) {
             p={pub}
             profileId={st.id}
             accountId=""
+            gigs={gigs}
             edit={{
+              gigs: () => setOpen({ kind: "gigs" }),
               photo: () => setOpen({ kind: "photo" }),
               basics: () => setOpen({ kind: "basics" }),
               section: (i) => pubKeys[i] && setOpen({ kind: "section", key: pubKeys[i] }),
@@ -311,6 +349,12 @@ export function Editor({ initial }: { initial: EditState }) {
           }}
           onClose={() => setOpen(null)}
         />
+      )}
+      {open?.kind === "gigs" && (
+        <GigsPanel gigs={gigs} city={d.city} handle={st.handle} onGigs={setGigs} onStory={(kind, gig) => setStory({ kind, gig })} onClose={() => setOpen(null)} />
+      )}
+      {story && (story.gig || nextGigs[0]) && (
+        <GigStoryDialog base={storyBase} one={story.gig ?? nextGigs[0]} all={nextGigs} start={story.kind} onClose={() => setStory(null)} />
       )}
       {open?.kind === "offline" && <OfflineDialog handle={st.handle} pending={pending} onConfirm={offline} onClose={() => setOpen(null)} />}
     </div>

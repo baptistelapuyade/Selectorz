@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Editor } from "@/components/edit/editor";
 import { fromServer } from "@/lib/edit/model";
+import type { Gig } from "@/lib/gigs";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Edit your page · Selectorz" };
@@ -15,7 +16,8 @@ async function Load() {
   if (!claims?.claims) redirect("/login?next=/edit");
   const { data } = await supabase.rpc("my_profile");
   if (!data) redirect("/start"); // noch keine Seite: erst bauen
-  return <Editor initial={fromServer(data)} />;
+  const { data: gigs } = await supabase.from("gigs").select("id, date, event, city, url").eq("profile_id", data.id).order("date");
+  return <Editor initial={fromServer(data)} initialGigs={(gigs as Gig[] | null) ?? []} />;
 }
 
 export default function EditPage() {
