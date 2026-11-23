@@ -1,8 +1,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import type { Gig } from "@/lib/gigs";
 import type { PublicProfile } from "@/lib/profile";
 
-export type PublicProfileRow = { id: string; account_id: string; published: PublicProfile };
+export type PublicProfileRow = { id: string; account_id: string; published: PublicProfile; gigs: Gig[] };
 
 // Öffentliche Daten ohne Sitzung lesen (RLS zeigt nur veröffentlichte Profile).
 // Zwischengespeichert; Veröffentlichen/Zurückziehen leert den Eintrag per Tag.
@@ -19,5 +20,8 @@ export async function getPublicProfile(handle: string): Promise<PublicProfileRow
     .eq("handle", handle)
     .eq("status", "published")
     .maybeSingle();
-  return (data as PublicProfileRow | null) ?? null;
+  if (!data) return null;
+  // Gigs gehen ohne Veröffentlichen live; RLS liefert nur die kommenden (bis 12 Uhr am Folgetag)
+  const { data: gigs } = await supabase.from("gigs").select("id, date, event, city, url").eq("profile_id", data.id).order("date");
+  return { ...(data as Omit<PublicProfileRow, "gigs">), gigs: (gigs as Gig[] | null) ?? [] };
 }

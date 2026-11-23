@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { FeedbackButton } from "@/components/alpha-bar";
 import { lookTokens, mmss, photoUrl, providerOf, PROVIDER_LABEL, SECTION_TITLES, type PublicProfile, type Section } from "@/lib/profile";
+import type { Gig } from "@/lib/gigs";
+import { GigsSection } from "./gigs-section";
 import { PlayerCard, PlayerProvider, TrackRow } from "./player";
 import { ShareButton } from "./share-button";
 import { ReportLink } from "./report-sheet";
@@ -8,7 +10,7 @@ import { ReportLink } from "./report-sheet";
 type T = ReturnType<typeof lookTokens>;
 
 // Im Editor: Vorschau mit Knöpfen direkt an Foto, Name und Sections (M1cEditor „Click anything to edit“)
-export type EditHooks = { photo: () => void; basics: () => void; section: (i: number) => void };
+export type EditHooks = { photo: () => void; basics: () => void; section: (i: number) => void; gigs?: () => void };
 
 function EditPill({ label, onClick, t, className = "" }: { label: string; onClick: () => void; t: T; className?: string }) {
   return (
@@ -25,7 +27,7 @@ function EditPill({ label, onClick, t, className = "" }: { label: string; onClic
 }
 
 // Öffentliches Profil nach den Boards „Profil Day/Night“ (mobil) und „Desktop · Profil“.
-export function ProfileView({ p, profileId, accountId, edit }: { p: PublicProfile; profileId: string; accountId: string; edit?: EditHooks }) {
+export function ProfileView({ p, profileId, accountId, edit, gigs = [] }: { p: PublicProfile; profileId: string; accountId: string; edit?: EditHooks; gigs?: Gig[] }) {
   const t = lookTokens(p.look, p.accent);
   const first = p.display_name.split(" ")[0] || p.display_name;
   const tick = [p.display_name, p.city, p.genres.join(" · "), p.plays.join(" · ")].filter(Boolean).map((s) => s!.toUpperCase());
@@ -84,6 +86,9 @@ export function ProfileView({ p, profileId, accountId, edit }: { p: PublicProfil
           </section>
 
           {p.links.length > 0 && <Links p={p} t={t} />}
+
+          {/* Next gigs: unter Foto und Links, eigene Section mit Überschrift (Variante B2) */}
+          <GigsSection gigs={gigs} name={p.display_name} t={t} onEdit={edit?.gigs && <EditPill label="Edit gigs" onClick={edit.gigs} t={t} />} />
 
           {/* Module: mobil untereinander, Desktop zweispaltig */}
           <div className="mt-12 grid gap-12 px-4 md:mt-16 md:grid-cols-2 md:gap-x-12 md:gap-y-14 md:px-0">
