@@ -330,14 +330,16 @@ function Chip({ label, children }: { label: string; children: React.ReactNode })
 function Preview({ children }: { children: React.ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ scale: 0.6, h: 800 });
+  const [box, setBox] = useState({ scale: 0.6, h: 800, w: 1280 });
   useLayoutEffect(() => {
     const o = outer.current;
     const i = inner.current;
     if (!o || !i) return;
+    // Mindestens 1280 px breit rendern (Desktop-Layout), auf breiten Bildschirmen die volle Breite füllen
     const measure = () => {
-      const scale = Math.min(1, o.clientWidth / 1280);
-      setBox({ scale, h: i.offsetHeight * scale });
+      const w = Math.max(1280, o.clientWidth);
+      const scale = o.clientWidth / w;
+      setBox({ scale, h: i.offsetHeight * scale, w });
     };
     const ro = new ResizeObserver(measure);
     ro.observe(o);
@@ -353,7 +355,7 @@ function Preview({ children }: { children: React.ReactNode }) {
       </span>
       <div ref={outer} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-[10px] bg-surface">
         <div style={{ height: box.h }}>
-          <div ref={inner} className="flex w-[1280px] origin-top-left flex-col" style={{ transform: `scale(${box.scale})` }}>
+          <div ref={inner} className="flex origin-top-left flex-col" style={{ width: box.w, transform: `scale(${box.scale})` }}>
             {children}
           </div>
         </div>
