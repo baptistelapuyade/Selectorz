@@ -254,11 +254,11 @@ otp_expiry = 600
 
 # Login per Code (gleiches Template wie in Produktion, PRD AUTH-01)
 [auth.email.template.magic_link]
-subject = "Your Selectorz code"
+subject = "Your Selectorz login code"
 content_path = "./supabase/templates/login-code.html"
 
 [auth.email.template.confirmation]
-subject = "Your Selectorz code"
+subject = "Your Selectorz login code"
 content_path = "./supabase/templates/login-code.html"
 
 # [auth.email.template.invite]

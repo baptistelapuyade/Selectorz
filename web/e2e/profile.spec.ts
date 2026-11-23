@@ -123,6 +123,7 @@ test("Laufband ist ein endloser Loop: zwei gleiche Hälften, jede mindestens so 
   await page.goto(`/${handle}`);
   const halves = page.locator("[data-marquee-half]");
   await expect(halves).toHaveCount(2);
+  await expect(halves.first()).toBeVisible(); // Seite wird gestreamt: erst messen, wenn sie sichtbar ist
   const [a, b] = await halves.evaluateAll((els) => els.map((e) => ({ text: e.textContent, width: e.getBoundingClientRect().width })));
   expect(a.text).toBe(b.text);
   expect(Math.abs(a.width - b.width)).toBeLessThan(1);
