@@ -85,6 +85,7 @@ const ERRORS: Record<string, string> = {
   needs_music_link: "Add at least one track or mix.",
   invalid_section: "One of the links doesn't work. Check it and try again.",
   invalid_photo: "The photo didn't save. Choose it again.",
+  invalid_accent: "That colour doesn't go with this look. Pick one of the colours shown.",
 };
 
 // Foto hochladen (nur das fertige Raster) und Profil in einem Schritt anlegen und veröffentlichen.
@@ -129,6 +130,7 @@ export async function publishProfile(form: FormData): Promise<PublishResult> {
     p_photo_path: path,
     p_section: payload.section,
     p_photo_style: style,
+    p_accent: payload.accent,
   });
   if (error) {
     await supabase.storage.from("avatars").remove(paths); // keine verwaisten Fotos

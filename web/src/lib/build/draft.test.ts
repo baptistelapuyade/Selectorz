@@ -57,6 +57,9 @@ describe("toPayload: was an den Server geht", () => {
     expect(p.section.title).toBe("Set openers");
     expect((p.section.content as { tracks: unknown[] }).tracks).toHaveLength(3);
   });
+  it("Akzentfarbe geht mit", () => {
+    expect(toPayload(full({ look: "night", accent: "#3FD0E0" }))).toMatchObject({ look: "night", accent: "#3FD0E0" });
+  });
   it("Texte werden getrimmt, Genres und Plays höchstens drei", () => {
     const p = toPayload(full({ displayName: "  Luma  ", city: " Berlin ", genres: ["A", "B", "C", "D"], plays: ["Vinyl", "USB / CDJ", "Controller", "Live / Hybrid"] }));
     expect(p.displayName).toBe("Luma");

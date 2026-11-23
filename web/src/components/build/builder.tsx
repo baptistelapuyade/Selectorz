@@ -9,21 +9,29 @@ import { PLAYS } from "@/lib/build/genres";
 import { handleProblem, suggestHandle } from "@/lib/build/handle";
 import { lookTokens, PROVIDER_LABEL } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
+import { ACCENTS, DEFAULT_ACCENT, isAccent } from "@/lib/accents";
 import { GenreSheet } from "./genre-sheet";
+import { LiveView } from "./live-view";
+import type { StoryData } from "./story-card";
 import { LiveSheet } from "./live-sheet";
 import { PhotoDialog } from "./photo-dialog";
 import { TrackInput, WorksWith } from "./track-input";
 import { useDraft } from "./use-draft";
 
-const ACCENT = { day: "#8C93FF", night: "#F0532A" } as const;
 const SITE = "selectorz.art";
 
 // Profil erstellen (M1b): Link → erste Version → live. Login erst beim Live-Gehen.
 export function Builder() {
   const { draft: d, update, ready, clear } = useDraft();
-  const [live, setLive] = useState<string | null>(null);
+  const [live, setLive] = useState<StoryData | null>(null);
 
-  if (live) return <Live handle={live} />;
+  if (live)
+    return (
+      <div className="flex min-h-[calc(100dvh-32px)] flex-col">
+        <Steps step={3} />
+        <LiveView story={live} />
+      </div>
+    );
   return (
     <div className="flex min-h-[calc(100dvh-32px)] flex-col">
       <Steps step={d.step === "link" ? 1 : 2} />
@@ -34,8 +42,9 @@ export function Builder() {
           d={d}
           update={update}
           onLive={(h) => {
+            // Daten für die Story-Karte behalten (Fotos liegen nur hier im Browser), dann Entwurf löschen
+            setLive({ handle: h, displayName: d.displayName.trim(), genres: d.genres, plays: d.plays, look: d.look, accent: d.accent, photo: d.photo });
             clear();
-            setLive(h);
           }}
         />
       )}
@@ -257,7 +266,7 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
   const [liveError, setLiveError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const seq = useRef(0);
-  const t = lookTokens(d.look, ACCENT[d.look]);
+  const t = lookTokens(d.look, d.accent);
   const problem = d.handle ? handleProblem(d.handle) : null;
   const miss = missing(d);
 
@@ -370,12 +379,31 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
                   type="button"
                   role="radio"
                   aria-checked={d.look === l}
-                  onClick={() => update({ look: l })}
+                  onClick={() => update((cur) => ({ look: l, accent: isAccent(l, cur.accent) ? cur.accent : DEFAULT_ACCENT[l] }))}
                   className={`flex h-11 items-center justify-center gap-2 rounded-full text-[15px] font-semibold ${d.look === l ? "bg-ink text-night-t1" : "hover:bg-[rgba(17,17,17,0.06)]"}`}
                 >
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: l === "day" ? "#E4F45A" : "#F0532A" }} />
                   {l === "day" ? "Day" : "Night"}
                 </button>
+              ))}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-[14px] font-semibold" id="colour-label">Colour</span>
+            <span role="radiogroup" aria-labelledby="colour-label" className="flex flex-wrap gap-2.5">
+              {ACCENTS[d.look].map((a) => (
+                <button
+                  key={a.hex}
+                  type="button"
+                  role="radio"
+                  aria-checked={d.accent === a.hex}
+                  aria-label={a.name}
+                  title={a.name}
+                  onClick={() => update({ accent: a.hex })}
+                  className={`pop h-10 w-10 rounded-full ${d.accent === a.hex ? "ring-2 ring-ink ring-offset-2 ring-offset-bg" : ""}`}
+                  style={{ background: a.hex }}
+                />
               ))}
             </span>
           </div>
@@ -515,38 +543,5 @@ function Row({ label, hint, children }: { label: string; hint: string; children:
       <span className="min-w-0 flex-1">{children}</span>
       <span className={`flex-none text-[12px] text-ink-3 ${hint === "Required" ? "font-semibold" : ""}`}>{hint}</span>
     </li>
-  );
-}
-
-// Schritt 3: live. Teilen und Story-Karte folgen in PR 2.
-function Live({ handle }: { handle: string }) {
-  const [copied, setCopied] = useState(false);
-  const url = `https://${SITE}/${handle}`;
-  return (
-    <main className="flex min-h-[calc(100dvh-32px)] flex-col">
-      <Steps step={3} />
-      <div className="appear flex flex-1 flex-col justify-center gap-6 px-4 py-10 md:px-20">
-        <span className="label-mono text-ink-3">Step 3 · Live</span>
-        <h1 className="text-[56px] font-extrabold leading-[0.86] tracking-[-0.06em] md:text-[120px]">You&apos;re live.</h1>
-        <p className="max-w-[520px] text-[16px] leading-[1.45] text-ink-2 md:text-[18px]">Put the link in your bio. You can add more sections later.</p>
-        <span className="flex h-14 max-w-[560px] items-center justify-between gap-3 rounded-s border border-line bg-surface pl-4 pr-2 text-[16px] font-semibold">
-          <span className="truncate">{SITE}/{handle}</span>
-          <button
-            type="button"
-            onClick={async () => {
-              await navigator.clipboard?.writeText(url).catch(() => {});
-              setCopied(true);
-              track("profile_link_copied");
-            }}
-            className={`flex h-10 flex-none items-center gap-1.5 rounded-[8px] px-3.5 text-[13px] ${copied ? "bg-ok text-white" : "bg-ink text-night-t1 hover:bg-ink-2"}`}
-          >
-            {copied ? "Link copied" : "Copy link"}
-          </button>
-        </span>
-        <Link href={`/${handle}`} className="cta flex h-[58px] max-w-[320px] items-center justify-between rounded-full bg-ink px-6 text-[16px] font-semibold text-night-t1 shadow-cta">
-          Open my page <span aria-hidden className="cta-arrow">→</span>
-        </Link>
-      </div>
-    </main>
   );
 }

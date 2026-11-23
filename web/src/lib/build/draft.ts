@@ -17,12 +17,13 @@ export type Draft = {
   plays: string[];
   city: string;
   look: "day" | "night";
+  accent: string;               // aus der Palette des Looks (lib/accents)
   photo: DraftPhoto | null;     // Data-URLs der fertigen Bilder
 };
 
 export const emptyDraft = (path: Draft["path"] = "mix"): Draft => ({
   path, step: "link", tracks: [], displayName: "", nameTouched: false, handle: "", handleTouched: false,
-  genres: [], plays: [], city: "", look: "day", photo: null,
+  genres: [], plays: [], city: "", look: "day", accent: "#8C93FF", photo: null,
 });
 
 export type Missing = "name" | "handle" | "photo" | "sound" | "track";
@@ -45,6 +46,7 @@ export type Payload = {
   plays: string[];
   city: string;
   look: "day" | "night";
+  accent: string;
   photoStyle: "dots" | "bw";
   section: { kind: "mix" | "set_openers"; title: string; content: Record<string, unknown> };
 };
@@ -70,6 +72,7 @@ export function toPayload(d: Draft): Payload {
     plays: d.plays.slice(0, 3),
     city: d.city.trim().slice(0, 60),
     look: d.look,
+    accent: d.accent,
     photoStyle: d.photo?.style ?? "dots",
     section,
   };

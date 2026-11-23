@@ -17,6 +17,8 @@ export function useDraft() {
         const saved = JSON.parse(raw);
         // Fotos aus einer früheren Fassung (nur eine Maske) neu wählen lassen
         if (saved.photo && typeof saved.photo !== "object") saved.photo = null;
+        // Entwürfe ohne Farbe: Standardfarbe des Looks
+        if (!saved.accent) saved.accent = saved.look === "night" ? "#F0532A" : "#8C93FF";
         // eslint-disable-next-line react-hooks/set-state-in-effect -- einmaliges Laden aus dem Browser nach dem ersten Rendern
         setDraft({ ...emptyDraft(), ...saved });
       }

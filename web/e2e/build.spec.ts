@@ -92,7 +92,19 @@ test("1 · Eigener SoundCloud-Link bis live; danach ausgeloggt lesbar (A1, D24)"
   await expect(page.getByRole("checkbox", { name: "Vinyl", exact: true })).toBeChecked();
   await addSound(page);
   await addPhoto(page);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await goLive(page);
+
+  // „You're live“: Link kopieren mit Bestätigung, Story-Karte 1080 × 1920 (SHARE-02, SHARE-07)
+  await expect(page.getByText(`selectorz.art/${handle}`, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Copy link" }).click();
+  await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`https://selectorz.art/${handle}`);
+  const card = page.getByRole("img", { name: "Your story card" });
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  expect(await card.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1080, 1920]);
+  await expect(page.getByRole("button", { name: "Share story" })).toBeEnabled();
+  await expect(page.getByRole("link", { name: /view my page/i })).toHaveAttribute("href", `/${handle}`);
 
   // Das Originalfoto hat den Browser nie verlassen: kein Request enthält die JPEG-Bytes.
   const signature = PORTRAIT.subarray(0, 64);
@@ -174,6 +186,7 @@ test("4 · Ohne eigenen Mix: Tracks you love werden Set openers", async ({ page 
 
   await setNameAndHandle(page, `Teo ${t}`, handle);
   await page.getByRole("radio", { name: "Night" }).click();
+  await page.getByRole("radio", { name: "Cyan" }).click(); // Akzentfarbe aus der Night-Palette (PROFILE-11)
   await addSound(page, "Disco");
   await addPhoto(page);
   await goLive(page);
@@ -182,6 +195,9 @@ test("4 · Ohne eigenen Mix: Tracks you love werden Set openers", async ({ page 
   // Night: Akzent-Punkte für Licht auf Schwarz (eigene Maske), kein Negativ
   const mask = await v.getByRole("img", { name: /halftone portrait/i }).evaluate((el) => getComputedStyle(el).maskImage || getComputedStyle(el).webkitMaskImage);
   expect(mask).toContain("-night.");
+  const acc = await db.query("select published->>'accent' as accent from public.profiles where handle = $1", [handle]);
+  expect(acc.rows[0].accent).toBe("#3FD0E0");
+  await expect(v.getByRole("img", { name: /halftone portrait/i })).toHaveCSS("background-color", "rgb(63, 208, 224)");
   await expect(v.getByText("Set openers")).toBeVisible();
   await expect(v.getByText("Glass Floor")).toBeVisible();
   await expect(v.getByText(`Ostkreuz Dub ${t}`, { exact: false }).first()).toBeVisible();
@@ -242,4 +258,14 @@ test("8 · Profil-Link statt Mix: klare Meldung, kein Profilname als Titel", asy
   await pasteLink(page, "https://soundcloud.com/baptistelapuyade");
   await expect(page.getByText(/that's a profile link/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /make my page/i })).toBeDisabled();
+});
+
+test("9 · Farbe passt sich beim Look-Wechsel an: Day-Farbe bleibt nicht im Night-Look hängen", async ({ page }) => {
+  await pasteLink(page, `https://soundcloud.com/c/colour-${tag()}`);
+  await page.getByRole("button", { name: /make my page/i }).click();
+  await page.getByRole("radio", { name: "Sun" }).click();
+  await expect(page.getByRole("radio", { name: "Sun" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "Night" }).click();
+  await expect(page.getByRole("radio", { name: "Ember" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radio", { name: "Sun" })).toHaveCount(0);
 });

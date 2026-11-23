@@ -13,11 +13,11 @@ const openers = (n: number) => ({
   content: { tracks: Array.from({ length: n }, (_, i) => ({ ...track(i + 1), provider: "soundcloud" })) },
 });
 
-type Args = { handle: string; name?: string; genres?: string[]; photo?: string | null; section?: unknown; look?: string; plays?: string[]; city?: string; style?: string };
+type Args = { handle: string; name?: string; genres?: string[]; photo?: string | null; section?: unknown; look?: string; plays?: string[]; city?: string; style?: string; accent?: string | null };
 
 function create(user: string, a: Args) {
   return as(user, (q) =>
-    q("select * from public.create_and_publish_profile($1, $2, $3, $4, $5, $6, $7, $8, $9)", [
+    q("select * from public.create_and_publish_profile($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", [
       a.handle,
       a.name ?? "Luma Reyes",
       a.genres ?? ["Deep House"],
@@ -27,6 +27,7 @@ function create(user: string, a: Args) {
       a.photo === undefined ? `${user}/avatar.png` : a.photo,
       JSON.stringify(a.section ?? mix()),
       a.style ?? "dots",
+      a.accent ?? null,
     ]),
   );
 }
@@ -63,6 +64,20 @@ describe("create_and_publish_profile: Profil in einem Schritt anlegen und veröf
     await expectError(create(u, { handle: handle(), style: "sepia" }), /invalid_photo/);
     const { rows } = await create(u, { handle: handle(), style: "bw", photo: `${u}/avatar-1.webp` });
     expect(rows[0].published).toMatchObject({ photo_style: "bw", photo_path: `${u}/avatar-1.webp` });
+  });
+
+  it("Akzentfarbe aus der Palette des Looks wird übernommen; fremde Farben werden abgewiesen (PROFILE-11)", async () => {
+    const u = await newUser();
+    await expectError(create(u, { handle: handle(), accent: "#123456" }), /invalid_accent/);
+    await expectError(create(u, { handle: handle(), look: "day", accent: "#F0532A" }), /invalid_accent/); // Night-Farbe im Day-Look
+    const { rows } = await create(u, { handle: handle(), look: "night", accent: "#3fd0e0" });
+    expect(rows[0].published).toMatchObject({ look: "night", accent: "#3FD0E0" });
+  });
+
+  it("Entwürfe können keine Farbe außerhalb der Palette speichern", async () => {
+    const u = await newUser();
+    await create(u, { handle: handle() });
+    await expectError(as(u, (q) => q("update public.profile_drafts set accent = '#000000'")), /profile_drafts_accent_palette|check constraint/);
   });
 
   it("Look Night setzt die passende Standard-Akzentfarbe", async () => {
@@ -104,7 +119,7 @@ describe("create_and_publish_profile: Profil in einem Schritt anlegen und veröf
 
   it("ohne Anmeldung geht nichts", async () => {
     await expectError(
-      as(null, (q) => q("select public.create_and_publish_profile('abc', 'x', '{a}', '{}', '', 'day', 'x/y.png', '{}', 'dots')")),
+      as(null, (q) => q("select public.create_and_publish_profile('abc', 'x', '{a}', '{}', '', 'day', 'x/y.png', '{}', 'dots', null)")),
       /permission denied|not_authenticated/,
     );
   });
