@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { checkHandle, publishProfile } from "@/app/(build)/start/actions";
+import { checkHandle, hasPage, publishProfile } from "@/app/(build)/start/actions";
 import { track } from "@/components/analytics";
 import { emptyDraft, missing, toPayload, type Draft, type DraftTrack, type Missing } from "@/lib/build/draft";
 import { PLAYS } from "@/lib/build/genres";
@@ -24,6 +24,13 @@ const SITE = "selectorz.art";
 export function Builder() {
   const { draft: d, update, ready, clear } = useDraft();
   const [live, setLive] = useState<StoryData | null>(null);
+
+  // Nur beim Öffnen: Wer schon eine Seite hat, bearbeitet sie im Editor (nicht nach dem Veröffentlichen hier)
+  useEffect(() => {
+    hasPage()
+      .then((yes) => yes && window.location.replace("/edit"))
+      .catch(() => {});
+  }, []);
 
   if (live)
     return (
@@ -54,6 +61,14 @@ export function Builder() {
 
 function Steps({ step }: { step: 1 | 2 | 3 }) {
   const names = ["Link", "First version", "Live"];
+  // Eingeloggt? Dann Konto zeigen und Abmelden anbieten (PO-Feedback 23.11.: sonst kein Weg hinaus)
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => setEmail(data.session?.user.email ?? null))
+      .catch(() => {});
+  }, []);
   return (
     <header className="flex h-14 flex-none items-center justify-between gap-4 border-line px-4 md:h-[72px] md:border-b md:px-10">
       <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
@@ -65,9 +80,19 @@ function Steps({ step }: { step: 1 | 2 | 3 }) {
           </li>
         ))}
       </ol>
-      <span className="label-mono text-ink-3">
-        <span className="md:hidden">{step} of 3</span>
-        <span className="hidden md:inline">Kept in this browser</span>
+      <span className="flex items-center gap-3">
+        <span className="label-mono text-ink-3">
+          <span className="md:hidden">{step} of 3</span>
+          <span className="hidden md:inline">{email ? "" : "Kept in this browser"}</span>
+        </span>
+        {email && (
+          <>
+            <span className="hidden max-w-[220px] truncate text-[13px] text-ink-3 md:inline">{email}</span>
+            <form action="/auth/signout" method="post">
+              <button className="h-9 rounded-full border-[1.5px] border-ink px-4 text-[13px] font-semibold hover:bg-ink hover:text-night-t1">Log out</button>
+            </form>
+          </>
+        )}
       </span>
     </header>
   );

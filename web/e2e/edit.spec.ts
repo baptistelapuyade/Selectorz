@@ -137,3 +137,13 @@ test("E5: Home zeigt die eigene Seite mit Status und führt in den Editor", asyn
   await page.getByRole("link", { name: /edit my page/i }).click();
   await expect(page).toHaveURL(/\/edit$/);
 });
+
+test("E6: Mit eigener Seite führt /start in den Editor; Abmelden geht im Editor", async ({ page }) => {
+  await liveProfile(page);
+  await page.goto("/start");
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.getByRole("button", { name: "Log out" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/edit");
+  await expect(page).toHaveURL(/\/login\?next=/);
+});
