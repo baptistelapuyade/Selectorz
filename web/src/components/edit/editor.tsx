@@ -143,6 +143,10 @@ export function Editor({ initial }: { initial: EditState }) {
           <span className="label-mono hidden text-ink-3 md:inline" aria-live="polite">
             {save === "saving" ? "Saving…" : save === "error" ? "Not saved" : "Draft saved"}
           </span>
+          <Link href="/settings" className="link-hover hidden text-[14px] font-semibold underline underline-offset-4 md:inline">Settings</Link>
+          <form action="/auth/signout" method="post">
+            <button className="h-9 rounded-full border-[1.5px] border-ink px-3.5 text-[13px] font-semibold hover:bg-ink hover:text-night-t1 md:h-10 md:px-5 md:text-[14px]">Log out</button>
+          </form>
         </span>
       </header>
 
