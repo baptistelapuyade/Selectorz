@@ -92,7 +92,7 @@ export function GigsPanel({ gigs, city, handle, onGigs, onStory, onClose }: Prop
           </span>
           {next.length > 1 && (
             <button type="button" onClick={() => onStory("all")} className="h-9 rounded-full bg-ink px-3.5 text-[13px] font-semibold text-night-t1">
-              Share all gigs
+              Share next {Math.min(3, next.length)} gigs
             </button>
           )}
         </span>
