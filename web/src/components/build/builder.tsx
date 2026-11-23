@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { checkHandle, publishProfile } from "@/app/(build)/start/actions";
+import { checkHandle, hasPage, publishProfile } from "@/app/(build)/start/actions";
 import { track } from "@/components/analytics";
 import { emptyDraft, missing, toPayload, type Draft, type DraftTrack, type Missing } from "@/lib/build/draft";
 import { PLAYS } from "@/lib/build/genres";
@@ -24,6 +24,13 @@ const SITE = "selectorz.art";
 export function Builder() {
   const { draft: d, update, ready, clear } = useDraft();
   const [live, setLive] = useState<StoryData | null>(null);
+
+  // Nur beim Öffnen: Wer schon eine Seite hat, bearbeitet sie im Editor (nicht nach dem Veröffentlichen hier)
+  useEffect(() => {
+    hasPage()
+      .then((yes) => yes && window.location.replace("/edit"))
+      .catch(() => {});
+  }, []);
 
   if (live)
     return (

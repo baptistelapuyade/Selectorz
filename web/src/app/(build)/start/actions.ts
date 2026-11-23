@@ -140,3 +140,12 @@ export async function publishProfile(form: FormData): Promise<PublishResult> {
   updateTag(`profile:${payload.handle}`);
   return { ok: true, handle: payload.handle };
 }
+
+// Hat das eingeloggte Konto schon eine Seite? Dann gehört es in den Editor (eine Seite pro Login).
+export async function hasPage(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims) return false;
+  const { data } = await supabase.rpc("my_profile");
+  return !!data;
+}
