@@ -44,7 +44,7 @@ async function makeProfile(user: string, handle: string, complete = true) {
     if (complete) {
       await q("insert into public.profile_sections (profile_id, kind, position, content) values ($1, 'mix', 1, $2)", [
         id,
-        { url: "https://soundcloud.com/luma/mix" },
+        { mixes: [{ url: "https://soundcloud.com/luma/mix", title: "Late Hours Mix" }] },
       ]);
     }
   });

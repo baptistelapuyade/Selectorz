@@ -390,7 +390,10 @@ function VersionStep({ d, update, onLive }: StepProps & { onLive: (handle: strin
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="text-[14px] font-semibold" id="colour-label">Colour</span>
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[14px] font-semibold" id="colour-label">Accent colour</span>
+              <span className="text-[12px] text-ink-3">For your photo and a few highlights. The page itself stays {d.look === "day" ? "Day" : "Night"}.</span>
+            </span>
             <span role="radiogroup" aria-labelledby="colour-label" className="flex flex-wrap gap-2.5">
               {ACCENTS[d.look].map((a) => (
                 <button
