@@ -320,8 +320,8 @@ export function Editor({ initial }: { initial: EditState }) {
 function Chip({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <span className="flex h-7 min-w-0 items-center gap-1.5 rounded-full bg-surface-sunken px-2.5">
-      <span className="label-mono text-ink-3">{label}</span>
-      <span className="truncate">{children}</span>
+      <span className="flex-none font-mono text-[10px] font-semibold tracking-[0.1em] text-ink">{label.toUpperCase()}</span>
+      <span className="truncate text-[12px] text-ink-3">{children}</span>
     </span>
   );
 }
