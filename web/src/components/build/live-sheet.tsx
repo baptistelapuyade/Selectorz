@@ -63,6 +63,9 @@ export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
               ? "Your page is ready. Confirm your email to save it and go live. No password, just a code."
               : `We sent a 6-digit code to ${email}. It works for 10 minutes.`}
           </p>
+          {step !== "email" && (
+            <p className="text-[13px] leading-[1.4] text-ink-3">Nothing after a minute? Check your spam folder, some providers like GMX or Web.de put it there.</p>
+          )}
         </div>
 
         <form

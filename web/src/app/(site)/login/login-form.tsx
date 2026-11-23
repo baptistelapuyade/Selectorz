@@ -59,6 +59,7 @@ export function LoginForm() {
         sub={
           <>
             We sent a code to <strong className="font-semibold text-ink">{email}</strong>. It works for 10 minutes.
+            <span className="mt-2 block text-[14px] text-ink-3">Nothing after a minute? Check your spam folder, some providers like GMX or Web.de put it there.</span>
           </>
         }
       />
