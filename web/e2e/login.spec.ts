@@ -28,7 +28,7 @@ test("Login per Code im selben Fenster, danach zurück zum Ziel", async ({ page 
   await page.getByRole("button", { name: /log in/i }).click();
 
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText(`Logged in as ${email}`)).toBeVisible();
+  await expect(page.getByText("No page yet.")).toBeVisible();
 });
 
 test("falscher Code zeigt Fehler, Eingabe bleibt, neuer Code funktioniert", async ({ page }) => {

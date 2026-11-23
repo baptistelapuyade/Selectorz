@@ -7,8 +7,25 @@ import { ReportLink } from "./report-sheet";
 
 type T = ReturnType<typeof lookTokens>;
 
+// Im Editor: Vorschau mit Knöpfen direkt an Foto, Name und Sections (M1cEditor „Click anything to edit“)
+export type EditHooks = { photo: () => void; basics: () => void; section: (i: number) => void };
+
+function EditPill({ label, onClick, t, className = "" }: { label: string; onClick: () => void; t: T; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`z-10 flex h-11 items-center gap-2 rounded-full px-4 text-[16px] font-semibold shadow-[0_4px_12px_rgba(0,0,0,0.18)] ${className}`}
+      style={{ background: t.fg, color: t.bg }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /></svg>
+      {label}
+    </button>
+  );
+}
+
 // Öffentliches Profil nach den Boards „Profil Day/Night“ (mobil) und „Desktop · Profil“.
-export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; profileId: string; accountId: string }) {
+export function ProfileView({ p, profileId, accountId, edit }: { p: PublicProfile; profileId: string; accountId: string; edit?: EditHooks }) {
   const t = lookTokens(p.look, p.accent);
   const first = p.display_name.split(" ")[0] || p.display_name;
   const tick = [p.display_name, p.city, p.genres.join(" · "), p.plays.join(" · ")].filter(Boolean).map((s) => s!.toUpperCase());
@@ -34,13 +51,13 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
               ))}
             </span>
           </span>
-          <FeedbackButton />
+          {!edit && <FeedbackButton />}
         </div>
 
         <div className="mx-auto w-full max-w-[1280px] md:px-10">
           <header className="flex h-14 items-center justify-between px-4 md:h-24 md:px-0">
             <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[38px] md:tracking-[-0.045em]">Selectorz</Link>
-            <span className="hidden md:block"><ShareButton name={p.display_name} color={t.fg} /></span>
+            {!edit && <span className="hidden md:block"><ShareButton name={p.display_name} color={t.fg} /></span>}
           </header>
 
           {/* Hero: Name und Info-Leiste links, Foto rechts (Desktop); untereinander (mobil) */}
@@ -51,28 +68,34 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
                 <h1 className="break-words text-[clamp(56px,20vw,84px)] font-extrabold leading-[0.86] tracking-[-0.055em] md:text-[clamp(84px,11vw,168px)] md:leading-[0.84] md:tracking-[-0.06em]">
                   {p.display_name}
                 </h1>
+                {edit && <EditPill label="Edit basics" onClick={edit.basics} t={t} className="self-start" />}
+                {p.bio && <p className="max-w-[560px] text-[17px] leading-[1.4] md:text-[20px]" style={{ color: t.muted }}>{p.bio}</p>}
                 <div className="flex items-center justify-between gap-3 md:hidden">
                   <p className="truncate font-mono text-[11px] tracking-[0.08em]" style={{ color: t.muted }}>@{p.handle.toUpperCase()} · DJ · SELECTOR</p>
-                  <ShareButton name={p.display_name} color={t.fg} />
+                  {!edit && <ShareButton name={p.display_name} color={t.fg} />}
                 </div>
               </div>
               <InfoBar p={p} t={t} />
             </div>
-            <Photo p={p} t={t} />
+            <div className="relative md:self-end">
+              <Photo p={p} t={t} />
+              {edit && <EditPill label="Change photo" onClick={edit.photo} t={t} className="absolute bottom-3 left-3" />}
+            </div>
           </section>
 
           {p.links.length > 0 && <Links p={p} t={t} />}
 
           {/* Module: mobil untereinander, Desktop zweispaltig */}
           <div className="mt-12 grid gap-12 px-4 md:mt-16 md:grid-cols-2 md:gap-x-12 md:gap-y-14 md:px-0">
-            {sections.map((s, i) => (
-              <SectionBlock key={i} n={i + 1} s={s} t={t} />
-            ))}
-            {p.bio && (
-              <section className="flex flex-col gap-3.5">
-                <Heading n={sections.length + 1} title="How I play" t={t} />
-                <p className="text-[20px] font-medium leading-[1.3] tracking-[-0.015em]">{p.bio}</p>
-              </section>
+            {sections.map((s, i) =>
+              edit ? (
+                <div key={i} className="relative">
+                  <SectionBlock n={i + 1} s={s} t={t} />
+                  <EditPill label="Edit" onClick={() => edit.section(p.sections.indexOf(s))} t={t} className="absolute right-0 top-2.5" />
+                </div>
+              ) : (
+                <SectionBlock key={i} n={i + 1} s={s} t={t} />
+              ),
             )}
           </div>
         </div>
@@ -111,7 +134,7 @@ export function ProfileView({ p, profileId, accountId }: { p: PublicProfile; pro
               <span className="flex gap-4">
                 <Link href="/privacy" className="hover:underline">PRIVACY</Link>
                 <Link href="/imprint" className="hover:underline">IMPRINT</Link>
-                <ReportLink targetType="profile" targetId={profileId} accountId={accountId} name={p.display_name} color={t.footFg} />
+                {!edit && <ReportLink targetType="profile" targetId={profileId} accountId={accountId} name={p.display_name} color={t.footFg} />}
                 <Link href="/" className="link-hover hover:underline">GET YOUR PAGE ↗</Link>
               </span>
             </span>
