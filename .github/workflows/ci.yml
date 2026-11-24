@@ -89,6 +89,8 @@ jobs:
           echo "NEXT_PUBLIC_POSTHOG_HOST=https://ph.e2e.test" >> "$GITHUB_ENV"
           # Metadaten-Abruf (oEmbed) in Tests aus einer Attrappe, keine echten Anfragen an SoundCloud
           echo "OEMBED_FAKE=1" >> "$GITHUB_ENV"
+          # Ketten-Mails im Test an Mailpit statt an Resend
+          echo "MAIL_TRANSPORT=mailpit" >> "$GITHUB_ENV"
       - run: npm ci
         working-directory: web
       - name: Datenbank-Tests (Rechte, Zustände, Gleichzeitigkeit)
