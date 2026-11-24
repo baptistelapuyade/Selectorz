@@ -23,12 +23,12 @@ export function SelectionView({ s }: { s: Selection }) {
 
   return (
     <PlayProvider>
-      <div className="flex flex-1 flex-col bg-surface text-ink">
+      <div className="flex flex-1 flex-col bg-bg text-ink">
         <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 py-5 md:px-10 md:py-8">
           <Link href="/" className="text-[22px] font-extrabold tracking-[-0.045em] md:text-[34px]">Selectorz</Link>
           <span className="flex items-center gap-4">
             <ShareButton name={title} color="#111111" />
-            <Link href="/" className="hidden text-[15px] font-semibold md:block">Get your page</Link>
+            <Link href="/" className="hidden h-11 items-center rounded-full bg-ink px-5 text-[14px] font-semibold text-night-t1 md:flex">Get your page</Link>
           </span>
         </header>
 
@@ -66,9 +66,9 @@ export function SelectionView({ s }: { s: Selection }) {
                 <span className="text-[24px] font-semibold tracking-[-0.02em]">Tracklist</span>
                 <span className="label-mono text-ink-2">IN THE ORDER THEY PICKED IT</span>
               </h2>
-              <ol className="m-0 list-none p-0">
+              <ol className="m-0 flex list-none flex-col gap-2 p-0 pt-4">
                 {s.entries.map((e) => (
-                  <li key={e.position} className="border-b border-line py-4" data-testid={`sel-entry-${e.position}`}>
+                  <li key={e.position} className="rounded-[6px] border border-line bg-surface p-3.5" data-testid={`sel-entry-${e.position}`}>
                     <span className="flex items-center gap-4">
                       <span className="flex w-24 flex-none flex-col gap-1">
                         <span className="flex h-[26px] w-10 items-center justify-center rounded-full font-mono text-[11px] font-semibold"
@@ -93,9 +93,9 @@ export function SelectionView({ s }: { s: Selection }) {
             <aside className="flex flex-col gap-8">
               <div>
                 <h2 className="border-b-2 border-ink pb-3 text-[24px] font-semibold tracking-[-0.02em]">The selectors</h2>
-                <ul className="m-0 list-none p-0">
+                <ul className="m-0 flex list-none flex-col gap-2 p-0 pt-4">
                   {[a, b].map((p) => (
-                    <li key={p.role} className="flex items-center gap-4 border-b border-line py-4">
+                    <li key={p.role} className="flex items-center gap-4 rounded-[6px] border border-line bg-surface p-3.5">
                       <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full font-mono text-[13px] font-semibold"
                         style={{ background: col[p.role], boxShadow: col.white ? "inset 0 0 0 1.5px #111" : undefined }}>{initials(p.name)}</span>
                       <span className="flex min-w-0 flex-col">
