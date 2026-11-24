@@ -185,3 +185,50 @@ describe("Veröffentlichen, verwerfen, offline nehmen", () => {
     await expectError(as(null, (q) => q("select public.discard_profile_changes()")), /permission denied/);
   });
 });
+
+describe("Teil 2: Proud transition und Links", () => {
+  const tr = (start: number, end: number) => ({
+    kind: "transition",
+    title: "Proud transition",
+    visible: true,
+    content: { url: "https://soundcloud.com/luma/live-at-paloma", title: "Live at Paloma", provider: "soundcloud", start, end, note: "Two records, one bassline." },
+  });
+  const links = (n: number) => Array.from({ length: n }, (_, i) => ({ label: `Link ${i + 1}`, url: `https://example.com/${i}` }));
+
+  it("T1: Transition mit Start und Ende geht nach „Publish changes“ live", async () => {
+    const u = await newUser();
+    const h = await live(u);
+    await save(u, base(u, { sections: [mix(), tr(2832, 2920)] }));
+    await publish(u);
+    const p = await pub(h);
+    expect(p.sections[1]).toMatchObject({ kind: "transition", content: { start: 2832, end: 2920 } });
+  });
+
+  it("T2: Ende vor Start oder länger als 3 Minuten wird abgelehnt; leer angelegt ist erlaubt, geht aber nicht live", async () => {
+    const u = await newUser();
+    const h = await live(u);
+    await expectError(save(u, base(u, { sections: [mix(), tr(300, 200)] })), /invalid_section/);
+    await expectError(save(u, base(u, { sections: [mix(), tr(100, 281)] })), /invalid_section/);
+    await save(u, base(u, { sections: [mix(), { kind: "transition", title: "Proud transition", visible: true, content: {} }] }));
+    await publish(u);
+    expect((await pub(h)).sections.map((s: { kind: string }) => s.kind)).toEqual(["mix"]);
+  });
+
+  it("L1: Links gehören zum Entwurf und gehen mit „Publish changes“ live", async () => {
+    const u = await newUser();
+    const h = await live(u);
+    await save(u, base(u, { links: links(2) }));
+    expect((await pub(h)).links).toEqual([]);
+    await publish(u);
+    expect((await pub(h)).links).toEqual(links(2));
+  });
+
+  it("L2: Höchstens 6 Links, nur https, Name nötig", async () => {
+    const u = await newUser();
+    await live(u);
+    await save(u, base(u, { links: links(6) }));
+    await expectError(save(u, base(u, { links: links(7) })), /invalid_links/);
+    await expectError(save(u, base(u, { links: [{ label: "IG", url: "http://instagram.com/x" }] })), /invalid_links/);
+    await expectError(save(u, base(u, { links: [{ label: " ", url: "https://instagram.com/x" }] })), /invalid_links/);
+  });
+});

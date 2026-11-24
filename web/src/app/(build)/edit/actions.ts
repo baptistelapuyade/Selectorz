@@ -10,6 +10,7 @@ export type EditResult = { ok: true; state: EditState } | { ok: false; error: st
 const ERRORS: Record<string, string> = {
   not_authenticated: "You're logged out. Log in again, your draft is kept.",
   too_many_sections: "Your page can have up to 8 sections.",
+  invalid_links: "One of your links doesn't work. Check it in “Your links”.",
   invalid_section: "One of the links doesn't work. Check it and try again.",
   invalid_photo: "The photo didn't save. Choose it again.",
   invalid_accent: "That colour doesn't go with this look. Pick one of the colours shown.",

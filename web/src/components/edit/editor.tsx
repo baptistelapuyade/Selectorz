@@ -14,12 +14,13 @@ import { gigDate, upcoming, type Gig } from "@/lib/gigs";
 import { AddSectionPanel } from "./add-section-panel";
 import { GigStoryDialog } from "./gig-story-dialog";
 import { GigsPanel } from "./gigs-panel";
+import { LinksPanel } from "./links-panel";
 import { BasicsPanel } from "./basics-panel";
 import { OfflineDialog } from "./offline-dialog";
 import { Arrow, Grip, useDragList } from "./panel";
 import { SectionPanel } from "./section-panel";
 
-type Open = null | { kind: "basics" } | { kind: "photo" } | { kind: "add" } | { kind: "offline" } | { kind: "gigs" } | { kind: "section"; key: string };
+type Open = null | { kind: "basics" } | { kind: "photo" } | { kind: "add" } | { kind: "offline" } | { kind: "gigs" } | { kind: "links" } | { kind: "section"; key: string };
 type Save = "saved" | "saving" | "error";
 
 // Profil bearbeiten nach dem ersten Veröffentlichen (M1cEditor). Alles landet im Entwurf;
@@ -224,6 +225,20 @@ export function Editor({ initial, initialGigs = [] }: { initial: EditState; init
             </button>
           </section>
 
+          {/* Links: gehören zum Entwurf */}
+          <section aria-label="Links" className="flex items-center gap-3 rounded-[12px] border border-line bg-surface py-2.5 pl-3.5 pr-2.5">
+            <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[8px] bg-line-soft text-[17px]" aria-hidden>↗</span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-semibold">
+                Links <span className="font-normal text-ink-3">· {d.links.length ? `${d.links.length} of 6` : "none yet"}</span>
+              </span>
+              <span className="truncate text-[12px] text-ink-3">{d.links.length ? d.links.map((l) => l.label).join(" · ") : "Instagram, SoundCloud, RA and more."}</span>
+            </span>
+            <button type="button" onClick={() => setOpen({ kind: "links" })} className="h-9 flex-none rounded-full border-[1.5px] border-ink px-3.5 text-[13px] font-semibold hover:bg-ink hover:text-night-t1">
+              {d.links.length ? "Edit links" : "+ Add links"}
+            </button>
+          </section>
+
           {/* Sections */}
           <section className="flex flex-col gap-2.5">
             <h2 className="flex items-center gap-2.5 border-t-2 border-ink pt-3">
@@ -316,6 +331,7 @@ export function Editor({ initial, initialGigs = [] }: { initial: EditState; init
             gigs={gigs}
             edit={{
               gigs: () => setOpen({ kind: "gigs" }),
+              links: () => setOpen({ kind: "links" }),
               photo: () => setOpen({ kind: "photo" }),
               basics: () => setOpen({ kind: "basics" }),
               section: (i) => pubKeys[i] && setOpen({ kind: "section", key: pubKeys[i] }),
@@ -350,6 +366,7 @@ export function Editor({ initial, initialGigs = [] }: { initial: EditState; init
           onClose={() => setOpen(null)}
         />
       )}
+      {open?.kind === "links" && <LinksPanel links={d.links} set={(links) => set({ links })} onClose={() => setOpen(null)} />}
       {open?.kind === "gigs" && (
         <GigsPanel gigs={gigs} city={d.city} handle={st.handle} onGigs={setGigs} onStory={(kind, gig) => setStory({ kind, gig })} onClose={() => setOpen(null)} />
       )}

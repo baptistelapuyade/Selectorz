@@ -63,11 +63,12 @@ export const ADDABLE: { kind: Kind; desc: string }[] = [
   { kind: "set_closers", desc: "One to three tracks for the last ten minutes." },
   { kind: "mix", desc: "One mix of yours that plays right on your page." },
   { kind: "text", desc: "A few lines on how you play." },
+  { kind: "transition", desc: "The blend you're proudest of, straight from one of your mixes." },
 ];
 
 export function newSection(kind: Kind): EditSection {
   const content: Record<string, unknown> =
-    kind === "mix" ? { mixes: [] } : kind === "star_track" ? { track: null } : kind === "text" ? { text: "" } : { tracks: [] };
+    kind === "mix" ? { mixes: [] } : kind === "star_track" ? { track: null } : kind === "text" ? { text: "" } : kind === "transition" ? {} : { tracks: [] };
   return { key: newKey(), kind, title: SECTION_TITLES[kind], visible: true, content };
 }
 

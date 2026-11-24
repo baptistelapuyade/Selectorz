@@ -33,7 +33,6 @@ export function AddSectionPanel({ sections, onAdd, onClose }: Props) {
           );
         })}
       </ul>
-      <p className="text-[13px] text-ink-3">Proud transition and Links come in the next update.</p>
     </Panel>
   );
 }

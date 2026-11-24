@@ -147,3 +147,66 @@ test("E6: Mit eigener Seite führt /start in den Editor; Abmelden geht im Editor
   await page.goto("/edit");
   await expect(page).toHaveURL(/\/login\?next=/);
 });
+
+test("E7: Proud transition anlegen (From/To, Länge), veröffentlichen, auf der Seite sichtbar", async ({ page, context }) => {
+  const handle = await liveProfile(page);
+  await page.goto("/edit");
+  await page.getByRole("button", { name: "+ Add a section" }).click();
+  await page.getByRole("button", { name: /^Proud transition/ }).click();
+  const link = page.getByLabel("Mix link");
+  await link.fill(`https://soundcloud.com/luma/live-at-paloma-${Date.now()}`);
+  await link.press("Enter");
+  await page.getByLabel("To", { exact: true }).fill("47:12");
+  await page.getByLabel("From", { exact: true }).fill("48:40");
+  await expect(page.getByText("“To” has to come after “From”.")).toBeVisible();
+  await page.getByLabel("From", { exact: true }).fill("47:12");
+  await page.getByLabel("To", { exact: true }).fill("48:40");
+  await expect(page.getByText("1:28 long")).toBeVisible();
+  await page.getByLabel(/What happens there/).fill("Two records, one bassline.");
+  await done(page);
+  await saved(page);
+  await page.getByRole("button", { name: /publish changes/i }).click();
+  await expect(page.getByText(/Published\./)).toBeVisible();
+
+  const pub = await context.newPage();
+  await pub.goto(`/${handle}`);
+  await expect(pub.getByRole("heading", { name: /Proud transition/ })).toBeVisible();
+  await expect(pub.getByText("47:12", { exact: true })).toBeVisible();
+  await expect(pub.getByText("Two records, one bassline.")).toBeVisible();
+});
+
+test("E8: Links hinzufügen (Name aus der Adresse), umbenennen, ungültigen ablehnen, veröffentlichen", async ({ page, context }) => {
+  const handle = await liveProfile(page);
+  await page.goto("/edit");
+  await page.getByRole("button", { name: "+ Add links" }).click();
+  const input = page.getByLabel("New link");
+  await input.fill("not a link");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText(/doesn't look like a link/)).toBeVisible();
+  await input.fill("instagram.com/lumareyes");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await input.fill("lumareyes.com");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  const list = page.getByRole("list", { name: "Links" });
+  await expect(list.getByRole("textbox").first()).toHaveValue("Instagram");
+  await list.getByLabel("Name for lumareyes.com").fill("Shop");
+  await done(page);
+  await saved(page);
+  await page.getByRole("button", { name: /publish changes/i }).click();
+  await expect(page.getByText(/Published\./)).toBeVisible();
+
+  const pub = await context.newPage();
+  await pub.goto(`/${handle}`);
+  const nav = pub.getByRole("navigation", { name: "Elsewhere" });
+  await expect(nav.getByRole("link", { name: "Instagram" })).toHaveAttribute("href", "https://instagram.com/lumareyes");
+  await expect(nav.getByRole("link", { name: "Shop" })).toBeVisible();
+});
+
+test("E9: Story der Seite auf Home: 1080 × 1920", async ({ page }) => {
+  await liveProfile(page);
+  await page.goto("/home");
+  await page.getByRole("button", { name: "Share story" }).click();
+  const img = page.getByRole("img", { name: "Your story card" });
+  await expect(img).toBeVisible({ timeout: 15_000 });
+  expect(await img.evaluate((el: HTMLImageElement) => [el.naturalWidth, el.naturalHeight])).toEqual([1080, 1920]);
+});

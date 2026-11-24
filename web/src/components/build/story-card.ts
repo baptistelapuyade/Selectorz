@@ -105,10 +105,14 @@ export async function drawStory(d: StoryData): Promise<HTMLCanvasElement> {
     ctx.fillRect(0, 0, STORY_W, photoH);
   }
   if (d.photo) {
-    if (d.photo.style === "bw") drawCover(ctx, await loadImage(d.photo.bw), 0, 0, STORY_W, photoH);
-    else {
-      const mask = await loadImage(night ? d.photo.night : d.photo.day);
-      drawCover(ctx, tint(mask, night ? d.accent : "#111111"), 0, 0, STORY_W, photoH);
+    try {
+      if (d.photo.style === "bw") drawCover(ctx, await loadImage(d.photo.bw), 0, 0, STORY_W, photoH);
+      else {
+        const mask = await loadImage(night ? d.photo.night : d.photo.day);
+        drawCover(ctx, tint(mask, night ? d.accent : "#111111"), 0, 0, STORY_W, photoH);
+      }
+    } catch {
+      // Foto nicht ladbar (z. B. Speicher ohne CORS): Story entsteht trotzdem, mit Farbfläche
     }
   }
   if (night) {
