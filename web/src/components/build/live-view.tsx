@@ -1,5 +1,6 @@
 "use client";
 
+import { isTouchDevice } from "@/lib/touch";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { track } from "@/components/analytics";
@@ -51,7 +52,7 @@ export function LiveView({ story }: { story: StoryData }) {
     const file = new File([card.blob], `selectorz-${story.handle}.png`, { type: "image/png" });
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     try {
-      if (nav.canShare?.({ files: [file] })) {
+      if (isTouchDevice() && nav.canShare?.({ files: [file] })) {
         await nav.share({ files: [file] });
         track("story_card_shared", { kind: "profile", via: "share" });
       } else {

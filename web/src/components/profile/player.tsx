@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
 import { track } from "@/components/analytics";
 
@@ -27,6 +27,35 @@ export function PlayerCard({
   const provider = providerOf(url);
   const src = embedSrc(url, startSeconds);
   const playing = active === id && src;
+  const frame = useRef<HTMLIFrameElement>(null);
+
+  // SoundCloud kennt keine Startzeit in der Adresse: nach dem Start einmal zur Stelle springen
+  // (offizielle Widget-API, wird erst nach dem Tippen geladen – wie der Player selbst)
+  useEffect(() => {
+    if (!playing || provider !== "soundcloud" || !startSeconds || !frame.current) return;
+    let gone = false;
+    const el = frame.current;
+    soundcloudApi()
+      .then((SC) => {
+        if (gone || !SC) return;
+        const w = SC.Widget(el);
+        let done = false;
+        // Der Player startet von selbst (auto_play); je nachdem, wann die API bereit ist,
+        // kommt zuerst READY, PLAY oder schon PLAY_PROGRESS. Bei READY vorspulen, beim ersten Abspielen sicher springen.
+        const jump = () => {
+          if (done) return;
+          done = true;
+          w.seekTo(startSeconds * 1000);
+        };
+        w.bind(SC.Widget.Events.READY, () => w.seekTo(startSeconds * 1000));
+        w.bind(SC.Widget.Events.PLAY, jump);
+        w.bind(SC.Widget.Events.PLAY_PROGRESS, jump);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [playing, provider, startSeconds]);
   return (
     <div className="flex flex-col rounded-[6px] border" style={{ background: surface, borderColor: line }}>
       <div className="flex items-center gap-3 p-3.5 md:gap-4 md:p-[18px]">
@@ -55,6 +84,7 @@ export function PlayerCard({
       </div>
       {playing ? (
         <iframe
+          ref={frame}
           title={`${PROVIDER_LABEL[provider]} player: ${title}`}
           src={src}
           allow="autoplay; encrypted-media"
@@ -109,4 +139,24 @@ export function TrackRow({
       {playing && <iframe title={`Player: ${title}`} src={src!} allow="autoplay; encrypted-media" className="h-[166px] w-full" />}
     </li>
   );
+}
+
+type SCWidget = { bind: (e: string, fn: () => void) => void; seekTo: (ms: number) => void };
+type SCApi = { Widget: ((el: HTMLIFrameElement) => SCWidget) & { Events: { READY: string; PLAY: string; PLAY_PROGRESS: string } } };
+let scLoad: Promise<SCApi | undefined> | null = null;
+function soundcloudApi(): Promise<SCApi | undefined> {
+  const w = window as unknown as { SC?: SCApi };
+  if (w.SC?.Widget) return Promise.resolve(w.SC);
+  scLoad ??= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://w.soundcloud.com/player/api.js";
+    s.async = true;
+    s.onload = () => resolve(w.SC);
+    s.onerror = () => {
+      scLoad = null;
+      reject(new Error("soundcloud api"));
+    };
+    document.head.appendChild(s);
+  });
+  return scLoad;
 }

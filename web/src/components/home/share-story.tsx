@@ -1,5 +1,6 @@
 "use client";
 
+import { isTouchDevice } from "@/lib/touch";
 import { useEffect, useState } from "react";
 import { track } from "@/components/analytics";
 import { drawStory, type StoryData } from "@/components/build/story-card";
@@ -70,7 +71,7 @@ function Dialog({ story, onClose }: { story: StoryData; onClose: () => void }) {
     const file = new File([card.blob], `selectorz-${story.handle}.png`, { type: "image/png" });
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     try {
-      if (nav.canShare?.({ files: [file] })) {
+      if (isTouchDevice() && nav.canShare?.({ files: [file] })) {
         await nav.share({ files: [file] });
         track("story_card_shared", { kind: "profile", via: "share" });
       } else {

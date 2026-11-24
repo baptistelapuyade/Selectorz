@@ -1,5 +1,6 @@
 "use client";
 
+import { isTouchDevice } from "@/lib/touch";
 import { useEffect, useState } from "react";
 import { track } from "@/components/analytics";
 import { useClosable } from "@/components/use-closable";
@@ -56,7 +57,7 @@ export function GigStoryDialog({ base, one, all, start, onClose }: Props) {
     const file = new File([card.blob], `selectorz-${base.handle}-gig.png`, { type: "image/png" });
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     try {
-      if (nav.canShare?.({ files: [file] })) {
+      if (isTouchDevice() && nav.canShare?.({ files: [file] })) {
         await nav.share({ files: [file] });
         track("story_card_shared", { kind: kind === "one" ? "gig" : "gigs", via: "share" });
       } else {
