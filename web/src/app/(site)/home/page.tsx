@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { CopyLink } from "@/components/home/copy-link";
+import { ShareStory } from "@/components/home/share-story";
 import { fromServer, type EditState } from "@/lib/edit/model";
 import { lookTokens, photoUrl } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
@@ -48,7 +48,6 @@ function PageCard({ st }: { st: EditState }) {
     : changes
       ? "You have changes that are only in your draft. Your public page still shows the old version."
       : `Up to date.${st.published_at ? ` Last published ${new Date(st.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.` : ""}`;
-  const url = `https://selectorz.art/${st.handle}`;
   return (
     <section className="flex flex-col overflow-hidden rounded-[18px] bg-surface" aria-label="Your page">
       <span className="relative block h-[230px]" style={{ background: t.htBg, opacity: live ? 1 : 0.45 }}>
@@ -76,7 +75,22 @@ function PageCard({ st }: { st: EditState }) {
           {!live ? "Edit and publish again" : changes ? "Finish and publish" : "Edit my page"} <span aria-hidden className="cta-arrow">→</span>
         </Link>
         <span className="grid grid-cols-2 gap-2">
-          <CopyLink url={url} disabled={!live} />
+          <ShareStory
+            disabled={!live}
+            story={{
+              handle: st.handle,
+              displayName: d.display_name,
+              genres: d.genres,
+              plays: d.plays,
+              look: d.look,
+              accent: d.accent,
+              photo: !d.photo_path
+                ? null
+                : d.photo_style === "bw"
+                  ? { style: "bw", bw: photoUrl(d.photo_path, d.look, "bw") ?? "" }
+                  : { style: "dots", day: photoUrl(d.photo_path, "day", "dots") ?? "", night: photoUrl(d.photo_path, "night", "dots") ?? "" },
+            }}
+          />
           {live ? (
             <a href={`/${st.handle}`} target="_blank" rel="noopener" className="flex h-11 items-center justify-center rounded-full border-[1.5px] border-ink text-[14px] font-semibold hover:bg-ink hover:text-night-t1">
               View page ↗

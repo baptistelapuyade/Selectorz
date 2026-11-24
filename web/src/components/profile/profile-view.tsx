@@ -10,7 +10,7 @@ import { ReportLink } from "./report-sheet";
 type T = ReturnType<typeof lookTokens>;
 
 // Im Editor: Vorschau mit Knöpfen direkt an Foto, Name und Sections (M1cEditor „Click anything to edit“)
-export type EditHooks = { photo: () => void; basics: () => void; section: (i: number) => void; gigs?: () => void };
+export type EditHooks = { photo: () => void; basics: () => void; section: (i: number) => void; gigs?: () => void; links?: () => void };
 
 function EditPill({ label, onClick, t, className = "" }: { label: string; onClick: () => void; t: T; className?: string }) {
   return (
@@ -85,7 +85,15 @@ export function ProfileView({ p, profileId, accountId, edit, gigs = [] }: { p: P
             </div>
           </section>
 
-          {p.links.length > 0 && <Links p={p} t={t} />}
+          {p.links.length > 0 &&
+            (edit?.links ? (
+              <div className="relative">
+                <Links p={p} t={t} />
+                <EditPill label="Edit links" onClick={edit.links} t={t} className="absolute -bottom-14 right-0" />
+              </div>
+            ) : (
+              <Links p={p} t={t} />
+            ))}
 
           {/* Next gigs: unter Foto und Links, eigene Section mit Überschrift (Variante B2) */}
           <GigsSection gigs={gigs} name={p.display_name} t={t} onEdit={edit?.gigs && <EditPill label="Edit gigs" onClick={edit.gigs} t={t} />} />
