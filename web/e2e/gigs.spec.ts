@@ -1,34 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { db, fresh, login, userId } from "./helpers";
+import { liveProfile } from "./helpers";
 
 // Abnahme „Next gigs“ (Briefing vom 23.11.2026): eintragen, sofort live, ändern, löschen mit Undo, Story.
 
-export async function liveProfile(page: Page, name = "Luma Reyes") {
-  const email = fresh("edit");
-  await login(page, email);
-  const uid = await userId(email);
-  const handle = `e2e${Date.now()}${Math.floor(Math.random() * 1000)}`;
-  const c = await db.connect();
-  try {
-    await c.query("begin");
-    await c.query("set local role authenticated");
-    await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
-    await c.query("select set_config('request.jwt.claim.sub', $1, true)", [uid]);
-    await c.query("select public.create_and_publish_profile($1, $2, '{House}', '{Vinyl}', 'Berlin', 'day', $3, $4)", [
-      handle,
-      name,
-      `${uid}/avatar.png`,
-      JSON.stringify({ kind: "mix", title: "My sound", content: { mixes: [{ url: "https://soundcloud.com/luma/late-hours-mix", title: "Late Hours Mix", provider: "soundcloud" }] } }),
-    ]);
-    await c.query("commit");
-  } catch (e) {
-    await c.query("rollback");
-    throw e;
-  } finally {
-    c.release();
-  }
-  return handle;
-}
 
 
 const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);

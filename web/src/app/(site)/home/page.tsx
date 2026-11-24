@@ -3,20 +3,23 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { Rounds } from "@/components/home/rounds";
 import { ShareStory } from "@/components/home/share-story";
+import type { Round } from "@/lib/chains";
 import { fromServer, type EditState } from "@/lib/edit/model";
 import { lookTokens, photoUrl } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Home · Selectorz" };
 
-// Home (M1cHome): links die eigene Seite mit Status, rechts die Rounds (Ketten kommen mit M2).
+// Home (M1cHome): links die eigene Seite mit Status, rechts die Rounds (Ketten, M2).
 async function Content() {
   await connection(); // Sitzung prüfen heißt: pro Request (Cache Components)
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims) redirect("/login?next=/home");
-  const { data } = await supabase.rpc("my_profile");
+  const [{ data }, { data: rounds }] = await Promise.all([supabase.rpc("my_profile"), supabase.rpc("my_rounds")]);
+  const list = (rounds as Round[] | null) ?? [];
   const st = data ? fromServer(data) : null;
   const first = (st?.draft.display_name ?? "").split(" ")[0];
   return (
@@ -29,7 +32,7 @@ async function Content() {
           <span className="label-mono pt-3.5 text-ink-3">Your page</span>
           {st ? <PageCard st={st} /> : <NoPage />}
         </aside>
-        <Rounds />
+        {list.length ? <Rounds rounds={list} /> : <NoRounds />}
       </div>
     </>
   );
@@ -116,8 +119,8 @@ function NoPage() {
   );
 }
 
-// Rounds: Ketten kommen mit M2. Leerer Zustand schon groß an seinem Platz (PO-Feedback 23.11.)
-function Rounds() {
+// Noch keine Runde: leerer Zustand groß an seinem Platz (PO-Feedback 23.11.)
+function NoRounds() {
   const steps = [
     ["01", "#8C93FF", "Pick a track", "Paste a link. Add a line about why it's the one."],
     ["02", "#F0532A", "Pass it on", "Send the link to a DJ. They answer with track 2."],
@@ -144,10 +147,9 @@ function Rounds() {
                 <span key={i} className="h-2.5 rounded-full" style={{ background: i === 0 ? "#8C93FF" : "#34343A" }} />
               ))}
             </span>
-            <span role="button" aria-disabled="true" className="flex h-[60px] cursor-not-allowed items-center justify-between rounded-full bg-night-t1 px-6 text-[17px] font-semibold text-ink opacity-70">
-              Start your first chain <span aria-hidden>→</span>
-            </span>
-            <span className="label-mono text-night-t3">Opens in the next update</span>
+            <Link href="/chain/new" className="cta flex h-[60px] items-center justify-between rounded-full bg-night-t1 px-6 text-[17px] font-semibold text-ink">
+              Start your first chain <span aria-hidden className="cta-arrow">→</span>
+            </Link>
           </span>
         </div>
         <ol className="grid gap-6 border-t border-night-line pt-6 md:grid-cols-3">
@@ -175,6 +177,9 @@ export default function HomePage() {
           <Link href="/settings" className="flex h-[38px] items-center rounded-full px-4 text-[14px] font-semibold hover:bg-line-soft">Settings</Link>
         </nav>
         <span className="ml-auto flex items-center gap-3">
+          <Link href="/chain/new" className="cta hidden h-10 items-center gap-3 rounded-full bg-ink px-5 text-[14px] font-semibold text-night-t1 shadow-cta md:flex">
+            Start a new chain <span aria-hidden className="cta-arrow">→</span>
+          </Link>
           <Link href="/settings" className="link-hover text-[14px] font-semibold underline underline-offset-4 md:hidden">Settings</Link>
           <form action="/auth/signout" method="post">
             <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Log out</button>

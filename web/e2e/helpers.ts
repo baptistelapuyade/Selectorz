@@ -25,3 +25,31 @@ export async function userId(email: string): Promise<string> {
   const { rows } = await db.query("select id from auth.users where email = $1", [email]);
   return rows[0]?.id;
 }
+
+// Eingeloggt mit veröffentlichter Seite (direkt über die Datenbank angelegt)
+export async function liveProfile(page: Page, name = "Luma Reyes") {
+  const email = fresh("edit");
+  await login(page, email);
+  const uid = await userId(email);
+  const handle = `e2e${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const c = await db.connect();
+  try {
+    await c.query("begin");
+    await c.query("set local role authenticated");
+    await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
+    await c.query("select set_config('request.jwt.claim.sub', $1, true)", [uid]);
+    await c.query("select public.create_and_publish_profile($1, $2, '{House}', '{Vinyl}', 'Berlin', 'day', $3, $4)", [
+      handle,
+      name,
+      `${uid}/avatar.png`,
+      JSON.stringify({ kind: "mix", title: "My sound", content: { mixes: [{ url: "https://soundcloud.com/luma/late-hours-mix", title: "Late Hours Mix", provider: "soundcloud" }] } }),
+    ]);
+    await c.query("commit");
+  } catch (e) {
+    await c.query("rollback");
+    throw e;
+  } finally {
+    c.release();
+  }
+  return handle;
+}

@@ -6,10 +6,21 @@ import { sendBuildCode, verifyBuildCode } from "@/app/(build)/start/actions";
 import { track } from "@/components/analytics";
 import { useClosable } from "@/components/use-closable";
 
-type Props = { onVerified: () => Promise<void>; onClose: () => void; error: string | null };
+type Text = { eyebrow: string; title: string; intro: string; action: string; acting: string; from: string; legal: string };
+const LIVE: Text = {
+  eyebrow: "Almost live",
+  title: "One last step.",
+  intro: "Your page is ready. Confirm your email to save it and go live. No password, just a code.",
+  action: "Go live",
+  acting: "Going live…",
+  from: "build",
+  legal: "By going live you agree that your page is public. Your email is never shown on it.",
+};
+type Props = { onVerified: () => Promise<void>; onClose: () => void; error: string | null; text?: Partial<Text> };
 
 // Login im selben Fenster, erst beim Live-Gehen (Plan M1b): Mail → 6-stelliger Code → „Go live“.
-export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
+export function LiveSheet({ onVerified, onClose: done, error: outer, text }: Props) {
+  const tx = { ...LIVE, ...text };
   const { closing, close } = useClosable(done);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -31,7 +42,7 @@ export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
       setError(null);
       setNotice(again ? "New code sent. Only the newest one works." : null);
       setStep("code");
-      track("login_code_requested", { from: "build" });
+      track("login_code_requested", { from: tx.from });
     });
 
   const verify = () =>
@@ -56,11 +67,11 @@ export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
       >
         <span className="mx-auto h-1 w-10 rounded-full bg-field-border md:hidden" />
         <div className="flex flex-col gap-2">
-          <span className="label-mono text-ink-3">Almost live</span>
-          <h2 id="live-title" className="text-[34px] font-extrabold leading-[0.95] tracking-[-0.045em]">One last step.</h2>
+          <span className="label-mono text-ink-3">{tx.eyebrow}</span>
+          <h2 id="live-title" className="text-[34px] font-extrabold leading-[0.95] tracking-[-0.045em]">{tx.title}</h2>
           <p className="text-[15px] leading-[1.45] text-ink-2">
             {step === "email"
-              ? "Your page is ready. Confirm your email to save it and go live. No password, just a code."
+              ? tx.intro
               : `We sent a 6-digit code to ${email}. It works for 10 minutes.`}
           </p>
           {step !== "email" && (
@@ -102,7 +113,7 @@ export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
             disabled={pending}
             className="cta flex h-[58px] items-center justify-between rounded-full bg-ink px-7 text-[16px] font-semibold text-night-t1 shadow-cta disabled:bg-field-border disabled:shadow-none"
           >
-            <span>{pending ? (step === "email" ? "Sending…" : "Going live…") : step === "email" ? "Send me a code" : "Go live"}</span>
+            <span>{pending ? (step === "email" ? "Sending…" : tx.acting) : step === "email" ? "Send me a code" : tx.action}</span>
             <span aria-hidden className="cta-arrow">→</span>
           </button>
           {step === "code" && (
@@ -117,7 +128,7 @@ export function LiveSheet({ onVerified, onClose: done, error: outer }: Props) {
           )}
         </form>
         <p className="mt-auto text-[12px] leading-[1.45] text-ink-3">
-          By going live you agree that your page is public. Your email is never shown on it. <Link href="/privacy" className="link-hover underline underline-offset-2">Privacy</Link>
+          {tx.legal} <Link href="/privacy" className="link-hover underline underline-offset-2">Privacy</Link>
         </p>
       </section>
     </div>
