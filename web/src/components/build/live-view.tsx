@@ -124,12 +124,10 @@ export function LiveView({ story }: { story: StoryData }) {
           <span className="text-[40px] font-extrabold leading-[0.88] tracking-[-0.055em] md:text-[64px]">Play a round with<br />another DJ.</span>
           <span className="text-[15px] text-night-t2 md:text-[16px]">Pick a track and send the link. Six tracks later you have a joint selection.</span>
         </span>
-        {/* Ketten kommen mit M2: Knopf schon an seinem Platz, klar als „bald“ markiert */}
         <span className="flex flex-col gap-2 md:items-end">
-          <span role="button" aria-disabled="true" className="flex h-16 cursor-not-allowed items-center gap-3.5 rounded-full bg-night-t1 px-7 text-[16px] font-semibold text-ink opacity-60">
-            Start a track chain <span aria-hidden>→</span>
-          </span>
-          <span className="label-mono text-night-t2">Opens in the next update</span>
+          <Link href="/chain/new" className="cta flex h-16 items-center gap-3.5 rounded-full bg-night-t1 px-7 text-[16px] font-semibold text-ink">
+            Start a track chain <span aria-hidden className="cta-arrow">→</span>
+          </Link>
         </span>
       </section>
     </div>

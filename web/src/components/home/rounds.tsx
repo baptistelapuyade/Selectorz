@@ -108,7 +108,10 @@ export function Rounds({ rounds }: { rounds: Round[] }) {
                     <span key={i} className="h-1.5 w-4 rounded-full" style={{ background: i < r.count ? ROLE_COLOR[i % 2 === 0 ? "A" : "B"] : "#D6D6D1" }} />
                   ))}
                 </span>
-                <span className="w-[150px] flex-none text-right text-[13px] text-ink-2 md:w-[230px]">{statusLine(r)}</span>
+                <span className="flex w-[150px] flex-none flex-col items-end gap-1 text-right text-[13px] text-ink-2 md:w-[230px]">
+                  {statusLine(r)}
+                  {r.state === "completed" && <PubStatus r={r} />}
+                </span>
               </Link>
             </li>
           ))}
@@ -121,4 +124,13 @@ export function Rounds({ rounds }: { rounds: Round[] }) {
       )}
     </section>
   );
+}
+
+// Status einer fertigen Runde (19.11.2026): fette Wörter mit kleiner Form; nur „Needs a yes“ als schwarze Pill
+function PubStatus({ r }: { r: Round }) {
+  if (r.public)
+    return <span className="flex items-center gap-1.5 text-[13px] font-bold text-ink"><span className="h-2 w-2 rounded-full bg-ink" />Public</span>;
+  if (!r.my_yes)
+    return <span className="rounded-full bg-ink px-2.5 py-0.5 text-[12px] font-semibold text-night-t1">Needs a yes</span>;
+  return <span className="flex items-center gap-1.5 text-[13px] font-bold text-ink"><span className="h-2 w-2 rounded-full border-[1.5px] border-ink" />Private</span>;
 }

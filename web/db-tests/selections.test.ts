@@ -1,0 +1,100 @@
+import { randomUUID } from "node:crypto";
+import { afterAll, describe, expect, it } from "vitest";
+import { as, expectError, newUser, pool, track } from "./db";
+
+// M2 Teil 2a: gemeinsame Freigabe und öffentliche Selection (Plan vom 24.11.2026, PRD 22 Nr. 13, 15, 16).
+afterAll(() => pool.end());
+
+async function publishedProfile(user: string, name: string, accent = "#8C93FF", instagram?: string) {
+  const h = `dj${randomUUID().replace(/-/g, "").slice(0, 10)}`;
+  await as(user, (q) =>
+    q("select public.create_and_publish_profile($1, $2, '{House}', '{}', 'Berlin', 'day', $3, $4)", [
+      h, name, `${user}/avatar.png`,
+      JSON.stringify({ kind: "mix", title: "My sound", content: { mixes: [{ ...track(9), provider: "soundcloud" }] } }),
+    ]),
+  );
+  await as(user, (q) => q("update public.profile_drafts set accent = $2, links = $3 where profile_id = (select id from public.profiles where account_id = $1)", [
+    user, accent, JSON.stringify(instagram ? [{ label: "Instagram", url: `https://www.instagram.com/${instagram}/` }] : []),
+  ]));
+  await as(user, (q) => q("select public.publish_profile()"));
+  return h;
+}
+
+async function fullChain(a: string, b: string) {
+  const t1 = track(1);
+  const { rows } = await as(a, (q) => q("select * from public.start_chain('Slow Sunday', $1, $2, $3, '', $4)", [t1.url, t1.title, t1.artist, randomUUID()]));
+  const { chain_id, invite_token } = rows[0];
+  const t2 = track(2);
+  await as(b, (q) => q("select public.join_chain($1, $2, $3, $4, '', $5)", [invite_token, t2.url, t2.title, t2.artist, randomUUID()]));
+  for (let pos = 3; pos <= 6; pos++) {
+    const t = track(pos);
+    await as(pos % 2 ? a : b, (q) => q("select * from public.add_track($1, $2, $3, $4, $5, '', $6)", [chain_id, pos, t.url, t.title, t.artist, randomUUID()]));
+  }
+  return chain_id as string;
+}
+
+const approve = (u: string, c: string, yes = true) => as(u, (q) => q("select public.set_chain_approval($1, $2)", [c, yes]));
+const sel = (u: string | null, c: string) => as(u, (q) => q("select public.selection_view($1) as v", [c])).then((r) => r.rows[0].v);
+const onProfile = (h: string) => as(null, (q) => q("select public.profile_selections($1) as v", [h])).then((r) => r.rows[0].v);
+const view = (u: string, c: string) => as(u, (q) => q("select public.chain_view($1) as v", [c])).then((r) => r.rows[0].v);
+
+describe("Selections", () => {
+  it("S1: öffentlich erst mit beiden Freigaben; davor null, auch für Teilnehmende über selection_view", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const h = await publishedProfile(a, "Luma Reyes", "#8C93FF", "luma.reyes");
+    const c = await fullChain(a, b);
+    expect(await sel(null, c)).toBeNull();
+    await approve(a, c);
+    expect(await sel(null, c)).toBeNull();
+    expect(await sel(a, c)).toBeNull();
+    expect(await onProfile(h)).toEqual([]);
+    const v = await view(a, c);
+    expect(v.public).toBe(false);
+    expect(v.participants.map((p: { approved: boolean }) => p.approved)).toEqual([true, false]);
+    await approve(b, c);
+    const s = await sel(null, c);
+    expect(s.entries).toHaveLength(6);
+    expect(s.participants[0]).toMatchObject({ role: "A", name: "Luma Reyes", handle: h, color: "#8C93FF", instagram: "luma.reyes" });
+    expect(s.participants[1]).toMatchObject({ role: "B", name: "Kofi", handle: null, color: null, instagram: null });
+    const list = await onProfile(h);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ id: c, title: "Slow Sunday", other: { name: "Kofi" } });
+    expect(list[0].tracks).toHaveLength(3);
+  });
+
+  it("S2: Widerruf nimmt die Seite sofort zurück, Profil bleibt", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const h = await publishedProfile(a, "Luma Reyes");
+    const c = await fullChain(a, b);
+    await approve(a, c);
+    await approve(b, c);
+    expect(await sel(null, c)).not.toBeNull();
+    await approve(b, c, false);
+    expect(await sel(null, c)).toBeNull();
+    expect(await onProfile(h)).toEqual([]);
+    const r = await as(null, (q) => q("select count(*)::int as n from public.profiles where handle = $1 and status = 'published'", [h]));
+    expect(r.rows[0].n).toBe(1);
+  });
+
+  it("S3: Freigabe nur bei fertiger Kette und nur für Teilnehmende; Fremde ändern nichts", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const c3 = await newUser("Mallory");
+    const c = await fullChain(a, b);
+    await expectError(approve(c3, c), /not_allowed/);
+    const t1 = track(1);
+    const { rows } = await as(a, (q) => q("select * from public.start_chain('', $1, $2, $3, '', $4)", [t1.url, t1.title, t1.artist, randomUUID()]));
+    await expectError(approve(a, rows[0].chain_id), /chain_not_completed/);
+  });
+
+  it("S4: my_rounds zeigt Freigabestand für Home", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const c = await fullChain(a, b);
+    await approve(b, c);
+    const r = await as(a, (q) => q("select public.my_rounds() as r")).then((x) => x.rows[0].r);
+    expect(r.find((x: { id: string }) => x.id === c)).toMatchObject({ my_yes: false, other_yes: true, public: false });
+  });
+});

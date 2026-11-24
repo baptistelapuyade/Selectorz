@@ -24,7 +24,7 @@ async function Profile({ params }: Props) {
   if (!isHandle(handle)) notFound();
   const row = await getPublicProfile(handle);
   if (!row) notFound(); // nie vergeben und zurückgezogen sehen gleich aus (PROFILE-07)
-  return <ProfileView p={row.published} profileId={row.id} accountId={row.account_id} gigs={row.gigs} />;
+  return <ProfileView p={row.published} profileId={row.id} accountId={row.account_id} gigs={row.gigs} selections={row.selections} />;
 }
 
 export default function ProfilePage(props: Props) {

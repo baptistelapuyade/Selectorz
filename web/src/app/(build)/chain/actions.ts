@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { Chain } from "@/lib/chains";
+import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export type PickedTrack = { url: string; title: string; artist?: string };
@@ -21,6 +22,7 @@ const ERRORS: Record<string, string> = {
   chain_taken: "Someone else answered first. This round already has two DJs.",
   own_invite: "That's your own invite. Send it to the DJ you want to play with.",
   blocked: "You can't join this round.",
+  chain_not_completed: "This round isn't complete yet.",
 };
 
 function fail(message: string | undefined): Fail {
@@ -134,4 +136,15 @@ export async function needsName(): Promise<boolean> {
     supabase.from("profiles").select("id").eq("account_id", uid).eq("status", "published").maybeSingle(),
   ]);
   return !prof && !String(acc?.display_name ?? "").trim();
+}
+
+// Freigabe zum Veröffentlichen geben oder zurücknehmen (PUBLISH-01..03)
+export async function setApproval(id: string, yes: boolean): Promise<Ok<{ chain: Chain }> | Fail> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_chain_approval", { p_chain: id, p_approve: yes });
+  if (error) return fail(error.message);
+  const r = await getChain(id);
+  // Profile beider zeigen freigegebene Selections: Cache der Profile erneuern (auch beim Zurücknehmen)
+  if (r.ok) for (const p of r.chain.participants) if (p.handle) updateTag(`profile:${p.handle}`);
+  return r;
 }

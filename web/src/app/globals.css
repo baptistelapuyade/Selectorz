@@ -159,3 +159,20 @@ body {
   .scrim, .sheet, .appear, .shake, .cta-stage { animation: none !important; }
   button:not(:disabled):active, a:active { transform: none; }
 }
+
+/* Signature 3 · Abschluss (Motion v0.2): Bänder nacheinander, Hülle wächst, Platte gleitet heraus, Text, Schritte.
+   Nur beim ersten Öffnen je Person; danach (.done-seen) und bei reduzierter Bewegung sofort das Endbild. */
+@keyframes done-band { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes done-sleeve { from { opacity: 0; transform: scale(0.86); } to { opacity: 1; transform: none; } }
+@keyframes done-disc { from { transform: translateX(0) rotate(0deg); } to { transform: translateX(var(--disc-out, 38%)) rotate(40deg); } }
+.done .done-band { transform-origin: left; animation: done-band 380ms var(--ease-out) both; }
+.done .done-sleeve { animation: done-sleeve 700ms var(--ease-out) 2.6s both; }
+.done .done-disc { animation: done-disc 1100ms var(--ease-out) 3.4s both; }
+.done .done-text { animation: appear var(--motion-slow) var(--ease-out) 4.6s both; }
+.done .done-steps { animation: appear var(--motion-slow) var(--ease-out) 5.4s both; }
+.done-disc { transform: translateX(var(--disc-out, 38%)) rotate(40deg); }
+.done.done-seen .done-band, .done.done-seen .done-sleeve, .done.done-seen .done-disc,
+.done.done-seen .done-text, .done.done-seen .done-steps { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .done .done-band, .done .done-sleeve, .done .done-disc, .done .done-text, .done .done-steps { animation: none !important; }
+}

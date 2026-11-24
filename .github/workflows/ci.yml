@@ -97,3 +97,13 @@ jobs:
           name: playwright-traces
           path: web/test-results/
           retention-days: 7
+      # Abnahme zum Anschauen: Videos und Screenshots der Hauptabläufe (auch wenn alles grün ist)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: abnahme
+          path: |
+            web/test-results/abnahme/
+            web/test-results/**/*.webm
+          retention-days: 14
+          if-no-files-found: ignore

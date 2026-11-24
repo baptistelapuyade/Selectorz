@@ -3,7 +3,7 @@ export type Role = "A" | "B";
 export type ChainState = "waiting_for_partner" | "active" | "completed" | "archived";
 
 export type Entry = { position: number; role: Role; title: string; artist: string; url: string; comment: string; created_at: string };
-export type Person = { role: Role; name: string; handle: string | null; me: boolean };
+export type Person = { role: Role; name: string; handle: string | null; me: boolean; color?: string | null; instagram?: string | null; approved?: boolean };
 export type Chain = {
   id: string;
   title: string;
@@ -13,6 +13,7 @@ export type Chain = {
   my_role: Role;
   my_turn: boolean;
   invite_open: boolean;
+  public?: boolean;
   participants: Person[];
   entries: Entry[];
 };
@@ -27,6 +28,9 @@ export type Round = {
   other: { name: string; handle: string | null } | null;
   last: { title: string; artist: string; mine: boolean } | null;
   updated_at: string;
+  my_yes?: boolean;
+  other_yes?: boolean;
+  public?: boolean;
 };
 export type Invite = {
   chain_id: string;
