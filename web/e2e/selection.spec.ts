@@ -11,8 +11,8 @@ const ctx = (info: { project: { use: Record<string, unknown> } }, extra = {}) =>
   return { baseURL: u.baseURL as string, viewport: u.viewport as { width: number; height: number }, isMobile: u.isMobile as boolean, hasTouch: u.hasTouch as boolean, userAgent: u.userAgent as string, deviceScaleFactor: u.deviceScaleFactor as number, ...extra };
 };
 
-const shot = (page: Page, name: string) =>
-  page.screenshot({ path: `test-results/abnahme/${test.info().project.name}-${name}.png`, fullPage: true });
+const shot = (page: Page, name: string, fullPage = true) =>
+  page.screenshot({ path: `test-results/abnahme/${test.info().project.name}-${name}.png`, fullPage });
 
 test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Widerruf nimmt sie zurück", async ({ page, browser }, info) => {
   test.setTimeout(150_000);
@@ -75,7 +75,8 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
   await shot(visitor, "3-selection-seite");
   await visitor.goto(`/${luma.handle}`);
   await expect(visitor.getByTestId("profile-selection")).toContainText("Slow Sunday");
-  await shot(visitor, "4-profil");
+  await visitor.getByTestId("profile-selection").scrollIntoViewIfNeeded();
+  await shot(visitor, "4-profil", false); // ganze Seite wird mobil leer aufgenommen (Profil-Layout), daher Ausschnitt
 
   // Luma nimmt das Ja zurück: Seite und Karte sind weg, Profil bleibt
   await page.reload();
