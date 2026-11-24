@@ -54,6 +54,8 @@ async function play(page: Page, n: number, artist: string, title: string) {
   await expect(page.getByRole("heading", { name: `Your turn. Track ${n} of 6.` })).toBeVisible();
   await pickTrack(page, n, sc(artist, title));
   await page.getByRole("button", { name: `Send track ${n}` }).click();
+  // erst weiter, wenn der Zug gespeichert ist (sonst lädt die andere Seite zu früh neu)
+  await expect(page.getByRole("heading", { name: /^Over to |^Your selection is complete\.$/ })).toBeVisible();
 }
 
 test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschluss", async ({ page, browser }) => {
