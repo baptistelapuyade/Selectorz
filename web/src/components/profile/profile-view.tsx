@@ -2,7 +2,9 @@ import Link from "next/link";
 import { FeedbackButton } from "@/components/alpha-bar";
 import { lookTokens, mmss, photoUrl, providerOf, PROVIDER_LABEL, SECTION_TITLES, type PublicProfile, type Section } from "@/lib/profile";
 import type { Gig } from "@/lib/gigs";
+import type { ProfileSelection } from "@/lib/selection";
 import { GigsSection } from "./gigs-section";
+import { SelectionsSection } from "./selections-section";
 import { PlayerCard, PlayerProvider, TrackRow } from "./player";
 import { ShareButton } from "./share-button";
 import { ReportLink } from "./report-sheet";
@@ -27,7 +29,7 @@ function EditPill({ label, onClick, t, className = "" }: { label: string; onClic
 }
 
 // Öffentliches Profil nach den Boards „Profil Day/Night“ (mobil) und „Desktop · Profil“.
-export function ProfileView({ p, profileId, accountId, edit, gigs = [] }: { p: PublicProfile; profileId: string; accountId: string; edit?: EditHooks; gigs?: Gig[] }) {
+export function ProfileView({ p, profileId, accountId, edit, gigs = [], selections = [] }: { p: PublicProfile; profileId: string; accountId: string; edit?: EditHooks; gigs?: Gig[]; selections?: ProfileSelection[] }) {
   const t = lookTokens(p.look, p.accent);
   const first = p.display_name.split(" ")[0] || p.display_name;
   const tick = [p.display_name, p.city, p.genres.join(" · "), p.plays.join(" · ")].filter(Boolean).map((s) => s!.toUpperCase());
@@ -111,6 +113,9 @@ export function ProfileView({ p, profileId, accountId, edit, gigs = [] }: { p: P
               ),
             )}
           </div>
+
+          {/* Freigegebene Selections (PUBLISH-06) */}
+          <SelectionsSection list={selections} t={t} />
         </div>
 
         {/* Abschluss: Track-Kette und Footer */}
@@ -124,18 +129,16 @@ export function ProfileView({ p, profileId, accountId, edit, gigs = [] }: { p: P
                   You pick track 1, {first} answers. Back and forth, six tracks in total.
                 </p>
               </div>
-              {/* Ketten kommen mit M2: Knopf schon an seinem Platz, klar als „bald“ markiert */}
               <div className="flex flex-col gap-2.5 md:items-end">
-                <span
-                  role="button"
-                  aria-disabled="true"
-                  className="flex h-[58px] w-full cursor-not-allowed items-center justify-between gap-6 rounded-full px-6 text-[16px] font-semibold opacity-60 md:w-[340px]"
+                <Link
+                  href="/chain/new"
+                  className="cta flex h-[58px] w-full items-center justify-between gap-6 rounded-full px-6 text-[16px] font-semibold md:w-[340px]"
                   style={{ background: t.btnBg, color: t.btnFg }}
                 >
                   <span>Start a track chain</span>
-                  <span aria-hidden>→</span>
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: t.muted }}>OPENS IN THE NEXT UPDATE</span>
+                  <span aria-hidden className="cta-arrow">→</span>
+                </Link>
+                <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: t.muted }}>THEN SEND THE LINK TO {first.toUpperCase()}</span>
               </div>
             </div>
           </section>

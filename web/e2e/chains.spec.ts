@@ -83,10 +83,10 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
   await expect(kofi.page.getByRole("heading", { name: "Over to Luma." })).toBeVisible();
   await play(page, 5, "theo", "warm-concrete");
   await play(kofi.page, 6, "sade", "basement-weather");
-  await expect(kofi.page.getByRole("heading", { name: "Six. Done." })).toBeVisible();
+  await expect(kofi.page.getByRole("heading", { name: "Your selection is complete." })).toBeVisible();
 
   await page.goto(chainUrl);
-  await expect(page.getByRole("heading", { name: "Six. Done." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your selection is complete." })).toBeVisible();
   for (let i = 1; i <= 6; i++) await expect(page.getByTestId(`entry-${i}`)).toBeVisible();
   await page.goto("/home");
   await expect(page.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Complete · 6 tracks");

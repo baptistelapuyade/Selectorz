@@ -47,14 +47,17 @@ export function Cta({ children, onClick, disabled, href, type = "button" }: { ch
   );
 }
 
-export const Num = ({ n, role, open }: { n: number; role?: Role; open?: boolean }) => (
-  <span
-    className={`flex h-[26px] w-10 flex-none items-center justify-center rounded-full font-mono text-[11px] font-semibold ${open ? "border border-dashed" : role ? "text-ink" : "border border-night-line text-night-t3"}`}
-    style={role ? (open ? { borderColor: ROLE_COLOR[role], color: ROLE_COLOR[role] } : { background: ROLE_COLOR[role] }) : undefined}
-  >
-    {String(n).padStart(2, "0")}
-  </span>
-);
+export const Num = ({ n, role, open, color }: { n: number; role?: Role; open?: boolean; color?: string }) => {
+  const c = role ? (color ?? ROLE_COLOR[role]) : undefined;
+  return (
+    <span
+      className={`flex h-[26px] w-10 flex-none items-center justify-center rounded-full font-mono text-[11px] font-semibold ${open ? "border border-dashed" : role ? "text-ink" : "border border-night-line text-night-t3"}`}
+      style={c ? (open ? { borderColor: c, color: c } : { background: c }) : undefined}
+    >
+      {String(n).padStart(2, "0")}
+    </span>
+  );
+};
 
 // Ein Player zur Zeit (MEDIA-09), geladen erst nach Tippen (MEDIA-07)
 const Play = createContext<{ on: string | null; set: (id: string | null) => void }>({ on: null, set: () => {} });
@@ -120,8 +123,8 @@ export function LastPlayed({ e, who }: { e: Entry; who: string }) {
 }
 
 // Die Kette rechts: gespielte Tracks, der eigene offene Platz, die kommenden Plätze
-export function ChainList({ title, entries, target, names, mine, pick }: {
-  title: string; entries: Entry[]; target: number; names: Record<Role, string>; mine: Role; pick: number | null;
+export function ChainList({ title, entries, target, names, mine, pick, colors }: {
+  title: string; entries: Entry[]; target: number; names: Record<Role, string>; mine: Role; pick: number | null; colors?: Record<Role, string>;
 }) {
   const roleAt = (pos: number): Role => (pos % 2 === 1 ? "A" : "B");
   return (
@@ -138,7 +141,7 @@ export function ChainList({ title, entries, target, names, mine, pick }: {
             return (
               <li key={pos} className="border-t border-night-line py-3.5" data-testid={`entry-${pos}`}>
                 <span className="flex items-center gap-3">
-                  <Num n={pos} role={e.role} />
+                  <Num n={pos} role={e.role} color={colors?.[e.role]} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-[16px] [overflow-wrap:anywhere]"><b className="font-semibold">{e.title}</b>{e.artist && <span className="text-night-t2"> · {e.artist}</span>}</span>
                     {e.comment && <span className="text-[14px] italic text-night-t2">“{e.comment}”</span>}

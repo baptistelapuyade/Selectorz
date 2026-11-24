@@ -6,6 +6,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransiti
 import { addTrack, endChain, getChain, renewInvite, revokeInvite } from "@/app/(build)/chain/actions";
 import { track as log } from "@/components/analytics";
 import { firstName, inviteUrl, ROLE_COLOR, urlKey, type Chain, type PageTrack, type Role } from "@/lib/chains";
+import { palette } from "@/lib/selection";
+import { Complete } from "./complete";
 import { inviteKey, rememberInvite } from "./start-chain";
 import { Bar, ChainHeader, ChainList, Cta, InviteCard, LastPlayed, PlayProvider, Progress, TrackPick, pickReady, type Pick } from "./ui";
 
@@ -166,18 +168,16 @@ export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[]
       </Bar>
     );
   } else if (c.state === "completed") {
-    body = (
-      <>
-        <span className="label-mono text-ink-3">COMPLETE · {c.target} TRACKS</span>
-        <h1 className="text-[56px] font-extrabold leading-[0.88] tracking-[-0.065em] md:text-[96px]">Six. Done.</h1>
-        <p className="text-[17px] text-ink-2">You and {otherName} finished the chain. Sharing and the mix come in the next update.</p>
-        <Progress entries={c.entries} target={c.target} />
-      </>
-    );
-    bar = (
-      <Bar>
-        <Cta href="/home">Go to my rounds</Cta>
-      </Bar>
+    return (
+      <PlayProvider>
+        <main className="flex flex-1 flex-col">
+          <ChainHeader a={names.A || "You"} b={names.B || null} right={c.public ? "PUBLIC" : "COMPLETE"} />
+          <Complete c={c} onChange={setC} />
+          <div className="px-4 pb-12 md:px-20">
+            <ChainList title={title} entries={c.entries} target={c.target} names={names} mine={c.my_role} pick={null} colors={palette(c.participants.map((p) => ({ role: p.role, color: p.color ?? null })))} />
+          </div>
+        </main>
+      </PlayProvider>
     );
   } else {
     body = (
