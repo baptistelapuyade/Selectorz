@@ -9,7 +9,7 @@ import { firstName, inviteUrl, ROLE_COLOR, urlKey, type Chain, type PageTrack, t
 import { palette } from "@/lib/selection";
 import { Complete } from "./complete";
 import { inviteKey, rememberInvite } from "./start-chain";
-import { Bar, ChainHeader, ChainList, Cta, InviteCard, LastPlayed, PlayProvider, Progress, TrackPick, pickReady, type Pick } from "./ui";
+import { Bar, ChainHeader, ChainList, Cta, InviteCard, LastPlayed, PlayProvider, Progress, ShareChips, TrackPick, pickReady, type Pick } from "./ui";
 
 // Die Runde (CHAIN-05..10): dein Zug, warten, Einladung offen, fertig, beendet
 export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[] }) {
@@ -22,6 +22,7 @@ export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[]
   const [override, setToken] = useState<string | null | undefined>(undefined);
   const token = override === undefined ? stored : override;
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const here = useSyncExternalStore(noop, () => window.location.href, () => null);
   const [sent, setSent] = useState(false);
   const [pending, start] = useTransition();
 
@@ -137,6 +138,7 @@ export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[]
           <span className="flex items-center gap-2 label-mono text-ink-3"><span className="h-2 w-2 rounded-full" style={{ background: ROLE_COLOR[other] }} />{otherName.toUpperCase()}’S TURN · TRACK {next}</span>
           <span className="text-[15px] leading-[1.45] text-ink-2">Want to nudge {otherName}? Send this page’s link. Only the two of you can open it.</span>
           <CopyHere />
+          <ShareChips url={here} text={`Your turn in ${title}:`} />
         </section>
         <span className="flex justify-between px-1"><span className="label-mono text-ink-3">THE CHAIN</span><span className="label-mono text-ink-3">{c.entries.length} OF {c.target}</span></span>
         <Progress entries={c.entries} target={c.target} />
