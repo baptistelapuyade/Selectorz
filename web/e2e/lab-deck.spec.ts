@@ -27,6 +27,7 @@ window.YT = { PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED
     this.getCurrentTime = function () { return s.t; };
     this.getDuration = function () { return 400; };
     this.getPlayerState = function () { return s.state; };
+    this.setVolume = function (v) { s.calls.push(['setVolume', v]); };
     this.destroy = function () {};
     var self = this;
     setTimeout(function () { ev.onReady && ev.onReady({ target: self }); }, 0);
@@ -168,4 +169,25 @@ test("Pfeile bleiben auf großen Bildschirmen direkt neben der Kiste", async ({ 
   expect(center - (prev.x + prev.width)).toBeLessThan(720);
   expect(next.x - center).toBeLessThan(720);
   expect(center - (prev.x + prev.width)).toBeGreaterThan(560); // nicht über den Hüllen
+});
+
+test("Lautstärkeregler steuert den YouTube-Player und gilt auch für die nächste Platte", async ({ page }) => {
+  await setup(page);
+  await page.getByRole("button", { name: "Play the crate" }).click();
+  await page.getByRole("button", { name: "Allow and load the player" }).click();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  const vol = page.getByRole("slider", { name: "Volume" });
+  await vol.fill("35");
+  await expect.poll(async () => (await calls(page)).filter((x) => x[0] === "setVolume").at(-1)?.[1]).toBe(35);
+  await page.getByRole("button", { name: "Next record" }).click();
+  await expect.poll(async () => (await calls(page)).filter((x) => x[0] === "loadVideoById").length).toBeGreaterThan(0);
+  await expect(vol).toHaveValue("35");
+});
+
+test("Bandcamp: Lautstärkeregler gesperrt", async ({ page }) => {
+  await setup(page);
+  await page.getByRole("button", { name: "Previous record" }).click();
+  await page.getByRole("button", { name: "Play the crate" }).click();
+  await page.getByRole("button", { name: "Allow and load the player" }).click();
+  await expect(page.getByRole("slider", { name: "Volume" })).toBeDisabled();
 });

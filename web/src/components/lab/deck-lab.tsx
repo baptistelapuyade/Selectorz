@@ -13,10 +13,10 @@ type Provider = "youtube" | "bandcamp" | "soundcloud";
 type YTPlayer = {
   playVideo(): void; pauseVideo(): void; seekTo(s: number, allow: boolean): void;
   loadVideoById(o: { videoId: string; startSeconds: number }): void;
-  getCurrentTime(): number; getDuration(): number; destroy(): void;
+  getCurrentTime(): number; getDuration(): number; setVolume(v: number): void; destroy(): void;
 };
 type YTApi = { Player: new (el: HTMLElement, opts: object) => YTPlayer };
-type SCWidget = { bind(e: string, fn: () => void): void; play(): void; seekTo(ms: number): void };
+type SCWidget = { bind(e: string, fn: () => void): void; play(): void; seekTo(ms: number): void; setVolume(v: number): void };
 type SCApi = { Widget: ((el: HTMLIFrameElement) => SCWidget) & { Events: { READY: string } } };
 
 let ytLoad: Promise<YTApi> | null = null;
@@ -67,6 +67,9 @@ export function DeckLab() {
   const [needTap, setNeedTap] = useState(false);
   const [errCode, setErrCode] = useState(0);
   const [mixOn, setMixOn] = useState(false);
+  const [volume, setVolumeState] = useState(80);
+  const volRef = useRef(80);
+  const scWidget = useRef<SCWidget | null>(null);
 
   const yt = useRef<YTPlayer | null>(null);
   const ytBox = useRef<HTMLDivElement>(null);
@@ -104,7 +107,7 @@ export function DeckLab() {
           height: "100%",
           playerVars: { start, playsinline: 1, rel: 0 },
           events: {
-            onReady: (e: { target: YTPlayer }) => e.target.playVideo(),
+            onReady: (e: { target: YTPlayer }) => { e.target.setVolume(volRef.current); e.target.playVideo(); },
             onStateChange: (e: { data: number }) => {
               if (e.data === 1) { setState("playing"); setNeedTap(false); }
               else if (e.data === 2 || e.data === 0) setState("paused");
@@ -146,7 +149,8 @@ export function DeckLab() {
     soundcloudApi()
       .then((SC) => {
         const w = SC.Widget(el);
-        w.bind(SC.Widget.Events.READY, () => { w.seekTo(LAB_MIX.cue * 1000); w.play(); });
+        scWidget.current = w;
+        w.bind(SC.Widget.Events.READY, () => { w.setVolume(volRef.current); w.seekTo(LAB_MIX.cue * 1000); w.play(); });
       })
       .catch(() => {});
   }, [mixOn]);
@@ -185,6 +189,13 @@ export function DeckLab() {
   };
 
   const seek = (to: number) => { yt.current?.seekTo(to, true); setTime(to); };
+  // Lautstärke über die offiziellen APIs (YouTube setVolume, SoundCloud Widget setVolume). Bandcamp bietet keine.
+  const changeVolume = (v: number) => {
+    volRef.current = v;
+    setVolumeState(v);
+    yt.current?.setVolume(v);
+    scWidget.current?.setVolume(v);
+  };
   const canSeek = !!loaded && !bc && !!consent.youtube && state !== "error";
   const frontIsLoaded = !!loaded && !front.dj && front.key === loaded.key;
   const playLabel = frontIsLoaded
@@ -334,6 +345,8 @@ export function DeckLab() {
               <button type="button" onClick={() => seek(seekTarget(time, 30, duration))} disabled={!canSeek} aria-label="Forward 30 seconds" className="h-12 w-12 rounded-full border-[1.5px] border-ink font-mono text-[11px] disabled:opacity-35">+30</button>
             </div>
             <span className="label-mono text-ink-3">{playLabel}</span>
+            <Volume value={volume} onChange={changeVolume} disabled={bc && !!consent.bandcamp} />
+            {bc && consent.bandcamp && <p className="text-[13px] text-ink-3">Bandcamp has no volume control here. Use your computer&apos;s volume.</p>}
           </>
         )}
 
@@ -369,7 +382,10 @@ export function DeckLab() {
           <p className="text-[26px] font-extrabold leading-none tracking-[-0.035em]">{LAB_MIX.title}</p>
           <p className="text-[14px] text-ink-2">{LAB_MIX.by}</p>
           {mixOn ? (
-            <iframe ref={mixFrame} title={`SoundCloud player: ${LAB_MIX.title}`} src={soundcloudWidgetSrc(LAB_MIX.url)!} allow="autoplay" className="h-[166px] w-full border-0" />
+            <>
+              <iframe ref={mixFrame} title={`SoundCloud player: ${LAB_MIX.title}`} src={soundcloudWidgetSrc(LAB_MIX.url)!} allow="autoplay" className="h-[166px] w-full border-0" />
+              <Volume value={volume} onChange={changeVolume} />
+            </>
           ) : consent.soundcloud ? (
             <button type="button" onClick={() => setMixOn(true)} className="min-h-12 self-start rounded-full bg-ink px-5 text-[15px] font-semibold text-day-ground">Play from {mmss(LAB_MIX.cue)}</button>
           ) : (
@@ -383,6 +399,20 @@ export function DeckLab() {
         </div>
       </section>
     </main>
+  );
+}
+
+function Volume({ value, onChange, disabled = false }: { value: number; onChange: (v: number) => void; disabled?: boolean }) {
+  return (
+    <label className={`flex items-center gap-2.5 font-mono text-[10px] tracking-[0.1em] text-ink-3 ${disabled ? "opacity-40" : ""}`}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M11 5L6 9H3v6h3l5 4z" />
+        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+        <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+      </svg>
+      <input type="range" min={0} max={100} step={1} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} aria-label="Volume" className="h-7 w-[160px] accent-ink" />
+      <span className="w-8 text-right">{value}</span>
+    </label>
   );
 }
 
