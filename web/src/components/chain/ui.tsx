@@ -10,7 +10,7 @@ import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
 import { copyText } from "@/lib/copy";
 
 // Kopf der Kettenseiten (Boards DeskChain*3): Logo, „A × B“ mit Personenfarben, rechts der Stand
-export function ChainHeader({ a, b, right }: { a: string; b: string | null; right: string }) {
+export function ChainHeader({ a, b, right, rightMobile }: { a: string; b: string | null; right: string; rightMobile?: string }) {
   return (
     <header className="border-b border-line">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-4 px-4 md:h-[72px] md:px-10">
@@ -20,7 +20,7 @@ export function ChainHeader({ a, b, right }: { a: string; b: string | null; righ
         {firstName(a).toUpperCase()} × {b ? firstName(b).toUpperCase() : "?"}
         <span className="h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.B }} />
       </span>
-      <span className="label-mono ml-auto text-ink-3 sm:ml-0">{right}</span>
+      <span className="label-mono ml-auto text-ink-3 sm:ml-0">{rightMobile ? <><span className="sm:hidden">{rightMobile}</span><span className="hidden sm:inline">{right}</span></> : right}</span>
       </div>
     </header>
   );
@@ -81,7 +81,7 @@ export function usePlay(id: string, url: string) {
   };
 }
 
-export function PlayButton({ id, url, title, big, dark }: { id: string; url: string; title: string; big?: boolean; dark?: boolean }) {
+export function PlayButton({ id, url, title, big, dark, fill }: { id: string; url: string; title: string; big?: boolean; dark?: boolean; fill?: string }) {
   const { src, playing, toggle } = usePlay(id, url);
   const size = big ? "h-12 w-12 md:h-14 md:w-14" : "h-10 w-10";
   if (!src)
@@ -93,7 +93,8 @@ export function PlayButton({ id, url, title, big, dark }: { id: string; url: str
     );
   return (
     <button type="button" onClick={toggle} aria-label={playing ? `Stop ${title}` : `Play ${title}`}
-      className={`pop flex ${size} flex-none items-center justify-center rounded-full ${big ? "bg-orange text-ink" : `border-[1.5px] ${dark ? "border-night-t1" : "border-ink"}`}`}>
+      style={fill ? { background: fill, color: "#111" } : undefined}
+      className={`pop flex ${size} flex-none items-center justify-center rounded-full ${fill ? "" : big ? "bg-orange text-ink" : `border-[1.5px] ${dark ? "border-night-t1" : "border-ink"}`}`}>
       {playing ? <span className="text-[11px] font-bold">❚❚</span> : <svg width={big ? 14 : 11} height={big ? 14 : 11} viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M7 4.5v15l13-7.5z" /></svg>}
     </button>
   );
@@ -125,8 +126,8 @@ export function LastPlayed({ e, who }: { e: Entry; who: string }) {
 }
 
 // Die Kette rechts: gespielte Tracks, der eigene offene Platz, die kommenden Plätze
-export function ChainList({ title, entries, target, names, mine, pick, colors }: {
-  title: string; entries: Entry[]; target: number; names: Record<Role, string>; mine: Role; pick: number | null; colors?: Record<Role, string>;
+export function ChainList({ title, entries, target, names, mine, pick, colors, note = "One player at a time. Players load only when you tap play." }: {
+  title: string; entries: Entry[]; target: number; names: Record<Role, string>; mine: Role; pick: number | null; colors?: Record<Role, string>; note?: string;
 }) {
   const roleAt = (pos: number): Role => (pos % 2 === 1 ? "A" : "B");
   return (
@@ -148,7 +149,7 @@ export function ChainList({ title, entries, target, names, mine, pick, colors }:
                     <span className="text-[16px] [overflow-wrap:anywhere]"><b className="font-semibold">{e.title}</b>{e.artist && <span className="text-night-t2"> · {e.artist}</span>}</span>
                     {e.comment && <span className="text-[14px] italic text-night-t2">“{e.comment}”</span>}
                   </span>
-                  <span className="label-mono hidden text-night-t3 sm:block">{e.role === mine ? "YOU" : firstName(names[e.role]).toUpperCase()}</span>
+                  <span className="label-mono hidden text-night-t3 sm:block">{names[e.role] ? firstName(names[e.role]).toUpperCase() : e.role === mine ? "YOU" : ""}</span>
                   <PlayButton id={`e${pos}`} url={e.url} title={e.title} dark />
                 </span>
                 <PlayFrame id={`e${pos}`} url={e.url} title={e.title} />
@@ -159,14 +160,15 @@ export function ChainList({ title, entries, target, names, mine, pick, colors }:
           return (
             <li key={pos} className="flex items-center gap-3 border-t border-night-line py-3.5">
               <Num n={pos} role={you ? r : undefined} open={you} />
-              <span className={you ? "text-[16px] font-semibold" : "text-[15px] text-night-t3"} style={you ? { color: ROLE_COLOR[r] } : undefined}>
-                {you ? "You pick this one" : r === mine ? "Your pick" : names[r] ? `${firstName(names[r])}’s pick` : "Your guest’s pick"}
+              <span className={`flex-1 ${you ? "text-[17px] font-semibold" : "text-[15px] text-night-t3"}`} style={you ? { color: ROLE_COLOR[r] } : undefined}>
+                {you ? "You pick this one" : names[r] ? `${firstName(names[r])}’s pick` : r === mine ? "Your pick" : "Your guest’s pick"}
               </span>
+              {you && <span aria-hidden className="ping mr-3 h-2.5 w-2.5 rounded-full" style={{ background: ROLE_COLOR[r], boxShadow: `0 0 0 5px ${ROLE_COLOR[r]}44` }} />}
             </li>
           );
         })}
       </ol>
-      <p className="pt-3 text-[13px] text-night-t3">One player at a time. Players load only when you tap play.</p>
+      <p className="pt-3 text-[14px] leading-[1.4] text-night-t3">{note}</p>
     </section>
   );
 }
@@ -184,7 +186,7 @@ export function Progress({ entries, target }: { entries: { role: Role }[]; targe
 
 // Teilen-Knöpfe wie im Board (DeskChainStart3, NOTIFY-08): WhatsApp, Instagram, Telegram, More…
 // Instagram hat keinen Web-Teilen-Link: Link wird kopiert, Hinweis zum Einfügen in eine DM.
-export function ShareChips({ url, text, disabled }: { url: string | null; text: string; disabled?: boolean }) {
+export function ShareChips({ url, text, disabled, grid }: { url: string | null; text: string; disabled?: boolean; grid?: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const canShare = useSyncExternalStore(noop, () => typeof navigator !== "undefined" && !!navigator.share, () => false);
   const chip = "flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[14px] font-semibold disabled:opacity-40 hover:border-ink";
@@ -193,7 +195,7 @@ export function ShareChips({ url, text, disabled }: { url: string | null; text: 
   const off = disabled || !url;
   return (
     <span className="flex flex-col gap-2">
-      <span className="flex flex-wrap gap-2">
+      <span className={grid ? "grid grid-cols-2 gap-2 md:flex md:flex-wrap" : "flex flex-wrap gap-2"}>
         <a aria-disabled={off} href={off ? undefined : `https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noopener noreferrer"
           className={`${chip} ${off ? "pointer-events-none opacity-40" : ""}`}>{dot("#25D366")}WhatsApp</a>
         <button type="button" disabled={off} className={chip}
@@ -295,43 +297,51 @@ export function TrackPick({ value, onChange, page, n, taken }: {
 }) {
   const [tab, setTab] = useState<"link" | "page">("link");
   const [key, setKey] = useState(0); // TrackInput neu aufsetzen, wenn von der Seite gewählt wird
+  const [all, setAll] = useState(false);
   const dup = value.track && taken.includes(urlKeyOf(value.track.url));
+  const shown = all ? page : page.slice(0, 3);
   return (
     <div className="flex flex-col gap-4">
       {page.length > 0 && (
-        <span role="tablist" className="flex self-start rounded-full bg-line-soft p-1">
+        <span role="tablist" className="flex self-start rounded-full bg-[rgba(17,17,17,0.08)] p-1">
           {(["link", "page"] as const).map((t) => (
             <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)}
-              className={`h-10 rounded-full px-4 text-[15px] font-semibold ${tab === t ? "bg-ink text-night-t1" : ""}`}>
-              {t === "link" ? "Paste a link" : <>From your page <span className="font-mono text-[10px] text-ink-3">{page.length}</span></>}
+              className={`flex h-10 items-center gap-2 rounded-full px-[18px] text-[14px] font-semibold ${tab === t ? "bg-ink text-night-t1" : ""}`}>
+              {t === "link" ? "Paste a link" : <>From your page <span className="font-mono text-[10px] opacity-80">{page.length}</span></>}
             </button>
           ))}
         </span>
       )}
       {tab === "page" ? (
-        <ul className="flex flex-col rounded-[14px] border border-line bg-surface" aria-label="Tracks from your page">
-          {page.map((t, i) => {
-            const on = value.track?.url === t.url;
-            const used = taken.includes(urlKeyOf(t.url));
-            return (
-              <li key={t.url} className={i ? "border-t border-line" : ""}>
-                <button type="button" disabled={used} aria-pressed={on}
-                  onClick={() => {
-                    onChange({ ...value, track: { url: t.url, title: t.title, artist: t.artist, provider: providerOf(t.url), fetched: "ok" } });
-                    setKey((k) => k + 1);
-                    setTab("link");
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-bg disabled:opacity-40">
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[15px] font-semibold">{t.title}</span>
-                    <span className="truncate text-[12px] text-ink-3">{[t.artist, PROVIDER_LABEL[providerOf(t.url)]].filter(Boolean).join(" · ")}{used ? " · already in this round" : ""}</span>
+        // Liste wie Board DeskChainYourTurnList3: Titel über zwei Zeilen, Artist, Herkunft · Plattform
+        <div className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-2" aria-label="Tracks from your page">
+            {shown.map((t) => {
+              const on = value.track?.url === t.url;
+              const used = taken.includes(urlKeyOf(t.url));
+              return (
+                <li key={t.url} className="flex items-center gap-3.5 rounded-[12px] bg-surface px-3.5 py-3" style={on ? { boxShadow: "0 0 0 2px #111111" } : undefined}>
+                  <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                    <span className="line-clamp-2 text-[16px] font-semibold leading-[1.2]">{t.title}</span>
+                    {t.artist && <span className="truncate text-[13px] text-ink-2">{t.artist}</span>}
+                    <span className="font-mono text-[10px] tracking-[0.12em] text-ink-3">{`${t.from} · ${PROVIDER_LABEL[providerOf(t.url)]}`.toUpperCase()}{used ? " · ALREADY IN THIS ROUND" : ""}</span>
                   </span>
-                  <span className="text-[13px] font-semibold">{on ? "Picked" : "Pick"}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                  <button type="button" disabled={used} aria-pressed={on}
+                    onClick={() => {
+                      onChange({ ...value, track: { url: t.url, title: t.title, artist: t.artist, provider: providerOf(t.url), fetched: "ok" } });
+                      setKey((k) => k + 1);
+                    }}
+                    className={`h-9 flex-none rounded-full px-3.5 text-[13px] font-semibold disabled:opacity-40 ${on ? "bg-ink text-night-t1" : "border-[1.5px] border-ink"}`}>
+                    {on ? "Selected" : "Use this"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {!all && page.length > 3 && (
+            <button type="button" onClick={() => setAll(true)} className="link-hover self-start text-[13px] font-semibold underline underline-offset-[3px]">Show all {page.length}</button>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col gap-2.5">
           <span className="text-[14px] font-semibold">Track link</span>
@@ -340,12 +350,17 @@ export function TrackPick({ value, onChange, page, n, taken }: {
         </div>
       )}
       {dup && <p role="alert" className="text-[13px] text-error-text">That track is already in this round. Pick another one.</p>}
-      <label className="flex flex-col gap-1.5 text-[14px] font-semibold">
-        <span>Why this one? <span className="font-normal text-ink-3">Optional</span></span>
-        <input value={value.comment} maxLength={140} onChange={(e) => onChange({ ...value, comment: e.target.value })}
-          className="field h-14 rounded-s border border-field-border bg-surface px-4 text-[16px] font-normal outline-none focus:border-2 focus:border-ink" />
-        <span className="self-end font-mono text-[11px] font-normal text-ink-3">{value.comment.length}/140</span>
-      </label>
+      {/* „Why this one?“ erst, wenn ein Track gewählt ist (Boards DeskChainYourTurn3, DeskChainConfirm2) */}
+      {value.track && (
+        <label className="flex flex-col gap-2 text-[14px] font-semibold">
+          <span className="flex justify-between">
+            <span>Why this one? <span className="font-normal text-ink-3">Optional</span></span>
+            <span className="font-mono text-[11px] font-normal tracking-[0.12em] text-ink-3">{value.comment.length}/140</span>
+          </span>
+          <input value={value.comment} maxLength={140} onChange={(e) => onChange({ ...value, comment: e.target.value })}
+            className="field h-[52px] rounded-s border border-field-border bg-surface px-4 text-[15px] font-normal outline-none focus:border-2 focus:border-ink" />
+        </label>
+      )}
     </div>
   );
 }

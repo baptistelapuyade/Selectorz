@@ -1,5 +1,7 @@
 "use client";
 
+import { Ended, NotFound, Revoked, Taken } from "./closed";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
@@ -20,7 +22,7 @@ export function JoinChain({ token, invite, page, loggedIn }: { token: string; in
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  if (!invite || !invite.invite_open) return <Closed invite={invite} />;
+  if (!invite || !invite.invite_open) return <Closed invite={invite} token={token} />;
 
   const host = firstName(invite.creator_name);
   const first: Entry = { position: 1, role: "A", title: invite.track_title, artist: invite.track_artist, url: invite.track_url, comment: invite.track_comment, created_at: "" };
@@ -125,32 +127,12 @@ export function JoinChain({ token, invite, page, loggedIn }: { token: string; in
   );
 }
 
-// Link ungültig, ersetzt, vergeben oder Runde beendet
-function Closed({ invite }: { invite: Invite | null }) {
-  const host = invite ? firstName(invite.creator_name) : null;
-  const [title, text] = !invite
-    ? ["This invite doesn’t exist.", "Check the link, or ask for a new one."]
-    : invite.state === "archived"
-      ? ["This round ended.", `${host} ended it before track 2.`]
-      : invite.state === "waiting_for_partner"
-        ? ["This link doesn’t work anymore.", `${host} replaced or turned off this invite. Ask for a new link.`]
-        : ["Someone else answered first.", `This round already has two DJs. Start your own and send it to ${host}.`];
-  return (
-    <>
-    <header className="mx-auto flex h-14 w-full max-w-[1440px] items-center px-4 md:h-[72px] md:px-10">
-      <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
-    </header>
-    <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col items-start gap-5 px-4 py-16 md:px-20 md:py-24">
-      <span className="label-mono text-ink-3">TRACK CHAINS</span>
-      <h1 className="max-w-[900px] text-[48px] font-extrabold leading-[0.9] tracking-[-0.06em] md:text-[80px]">{title}</h1>
-      <p className="text-[17px] text-ink-2">{text}</p>
-      <span className="flex flex-wrap gap-3 pt-2">
-        <Cta href="/chain/new">Start your own chain</Cta>
-        <Link href="/" className="flex h-[58px] items-center rounded-full border-[1.5px] border-ink px-6 text-[16px] font-semibold">What’s Selectorz?</Link>
-      </span>
-    </main>
-    </>
-  );
+// Link ungültig, ersetzt, vergeben oder Runde beendet (Boards DeskErrTaken3, DeskErrRevoked, DeskErrEnded)
+function Closed({ invite, token }: { invite: Invite | null; token: string }) {
+  if (!invite) return <NotFound />;
+  if (invite.state === "waiting_for_partner") return <Revoked invite={invite} token={token} />;
+  if (invite.state === "archived" && !invite.partner_name) return <Ended name={firstName(invite.creator_name)} count={1} target={invite.target} entries={[{ role: "A" }]} />;
+  return <Taken invite={invite} />;
 }
 
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";

@@ -152,3 +152,24 @@ export async function setApproval(id: string, yes: boolean): Promise<Ok<{ chain:
   if (r.ok) for (const p of r.chain.participants) if (p.handle) updateTag(`profile:${p.handle}`);
   return r;
 }
+
+// Name der Runde (DeskChainComplete3 „Name it“): beide Beteiligten dürfen umbenennen
+export async function renameChain(id: string, title: string): Promise<Ok<{ chain: Chain }> | Fail> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rename_chain", { p_chain: id, p_title: String(title ?? "").slice(0, 200) });
+  if (error) return fail(error.message);
+  const r = await getChain(id);
+  if (r.ok && r.chain.public) for (const p of r.chain.participants) if (p.handle) updateTag(`profile:${p.handle}`);
+  return r;
+}
+
+// „Email me“ in der Übergabe (DeskChainHandoff3): gleiche Einstellung wie in Settings
+export async function setNotify(on: boolean): Promise<Ok<{ on: boolean }> | Fail> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const id = data?.claims?.sub as string | undefined;
+  if (!id) return fail("not_authenticated");
+  const { error } = await supabase.from("accounts").update({ notify_email: !!on }).eq("id", id);
+  if (error) return fail(error.message);
+  return { ok: true, on: !!on };
+}

@@ -97,4 +97,20 @@ describe("Selections", () => {
     const r = await as(a, (q) => q("select public.my_rounds() as r")).then((x) => x.rows[0].r);
     expect(r.find((x: { id: string }) => x.id === c)).toMatchObject({ my_yes: false, other_yes: true, public: false });
   });
+
+  it("S5: Name ändern nur für Teilnehmende; Foto der veröffentlichten Seite in der Selection", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const c3 = await newUser("Mallory");
+    await publishedProfile(a, "Luma Reyes");
+    const c = await fullChain(a, b);
+    await as(b, (q) => q("select public.rename_chain($1, $2)", [c, "  Late Bloom  "]));
+    await expectError(as(c3, (q) => q("select public.rename_chain($1, 'x')", [c])), /not_allowed/);
+    await approve(a, c);
+    await approve(b, c);
+    const s = await sel(null, c);
+    expect(s.title).toBe("Late Bloom");
+    expect(s.participants[0].photo).toMatchObject({ path: `${a}/avatar.png`, style: "dots" });
+    expect(s.participants[1].photo).toBeNull();
+  });
 });

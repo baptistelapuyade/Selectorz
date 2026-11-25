@@ -83,13 +83,27 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
   await page.goto("/home");
   const card = page.getByTestId("round-turn").filter({ hasText: "Slow Sunday" });
   await expect(card).toContainText("Glass Floor");
-  await card.click();
+  await expect(page.getByText("YOUR TURN", { exact: true })).toBeVisible();
+  await card.getByRole("link", { name: /Pick track 3/ }).click();
   await expect(page.getByRole("heading", { name: "Your turn. Track 3 of 6." })).toBeVisible();
   await expect(page.getByLabel("Kofi played")).toContainText("Kept the dub, added a little shine.");
+  await expect(page.getByText(/^KOFI ANSWERED · /)).toBeVisible();
+  await expect(page.getByText("We email Kofi when it’s in. You can send the link yourself too.")).toBeVisible();
 
   await pickTrack(page, 3, sc("halden", "low-ceiling"));
   await page.getByRole("button", { name: "Send track 3" }).click();
   await expect(page.getByRole("heading", { name: "Over to Kofi." })).toBeVisible();
+  await expect(page.getByText("We’ve emailed Kofi.", { exact: false })).toBeVisible();
+  const mailMe = page.getByRole("switch", { name: "Email me" });
+  await expect(mailMe).toHaveAttribute("aria-checked", "true");
+  await mailMe.click();
+  await expect(mailMe).toHaveAttribute("aria-checked", "false");
+  await expect(mailMe).toBeEnabled();
+  await page.reload();
+  await expect(page.getByRole("switch", { name: "Email me" })).toHaveAttribute("aria-checked", "false");
+  await page.getByRole("switch", { name: "Email me" }).click();
+  await expect(page.getByRole("switch", { name: "Email me" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("switch", { name: "Email me" })).toBeEnabled();
 
   await play(kofi.page, 4, "ines", "harbour-lights");
   await expect(kofi.page.getByRole("heading", { name: "Over to Luma." })).toBeVisible();
@@ -99,9 +113,10 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
 
   await page.goto(chainUrl);
   await expect(page.getByRole("heading", { name: "Your selection is complete." })).toBeVisible();
-  for (let i = 1; i <= 6; i++) await expect(page.getByTestId(`entry-${i}`)).toBeVisible();
+  await expect(page.getByText("6 OF 6 · LUMA × KOFI")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Slow Sunday, a selection by Luma × Kofi" })).toBeVisible();
   await page.goto("/home");
-  await expect(page.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Complete · 6 tracks");
+  await expect(page.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Needs a yes");
   await kofi.ctx.close();
 });
 
@@ -125,7 +140,8 @@ test("K2: Zweite Person kommt zu spät, ersetzter Link geht nicht mehr, eigener 
 
   const kofi = await joinAsNewcomer(browser, second);
   await a.goto(second);
-  await expect(a.getByRole("heading", { name: "Someone else answered first." })).toBeVisible();
+  await expect(a.getByRole("heading", { name: "Someone got here first." })).toBeVisible();
+  await expect(a.getByText("Luma and Kofi are already playing.", { exact: false })).toBeVisible();
   await anon.close();
   await kofi.ctx.close();
 });
@@ -145,9 +161,9 @@ test("K3: Gleicher Track wird abgefangen, Runde beenden mit Bestätigung", async
   await expect(page.getByRole("button", { name: "Send track 3" })).toBeDisabled();
   await page.getByRole("button", { name: "End this round" }).click();
   await page.getByRole("button", { name: "End round" }).click();
-  await expect(page.getByRole("heading", { name: "This round ended." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You ended this round." })).toBeVisible();
   await kofi.page.reload();
-  await expect(kofi.page.getByRole("heading", { name: "This round ended." })).toBeVisible();
+  await expect(kofi.page.getByRole("heading", { name: "Luma ended this round." })).toBeVisible();
   await page.goto("/home");
   await page.getByRole("button", { name: /Ended/ }).click();
   await expect(page.getByTestId("round-row").filter({ hasText: "Rooftop Hours" })).toContainText("Ended · 2 of 6");
