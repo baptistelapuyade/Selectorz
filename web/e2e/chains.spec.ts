@@ -206,6 +206,24 @@ test("K6: Musik stoppt beim Verlassen der Runde (PO-Feedback 25.11.)", async ({ 
   await expect(page.locator("iframe")).toHaveCount(0);
 });
 
+test("K7: Home zeigt den neuen Zug ohne Neuladen (PO-Feedback 25.11.)", async ({ page, browser }) => {
+  test.setTimeout(90_000);
+  await liveProfile(page, "Luma Reyes");
+  const invite = await startChain(page, "Come Back Home");
+  // Luma: Home, dann in die wartende Runde
+  await page.getByRole("link", { name: "Done, go to my rounds" }).click();
+  const row = page.getByTestId("round-row").filter({ hasText: "Come Back Home" });
+  await expect(row).toContainText("Invite open");
+  await row.click();
+  await expect(page.getByRole("heading", { name: "Waiting for track 2." })).toBeVisible();
+  // Kofi antwortet in einem anderen Browser
+  const kofi = await joinAsNewcomer(browser, invite);
+  // Luma geht über den Knopf zurück nach Home (Next zeigt die aufbewahrte Seite): Zug muss da sein
+  await page.getByRole("link", { name: "Go to my rounds" }).click();
+  await expect(page.getByTestId("round-turn").filter({ hasText: "Come Back Home" })).toBeVisible();
+  await kofi.ctx.close();
+});
+
 test("K5: Kette starten braucht Login", async ({ page }) => {
   await page.goto("/chain/new");
   await expect(page).toHaveURL(/\/login\?next=(%2F|\/)chain(%2F|\/)new/);
