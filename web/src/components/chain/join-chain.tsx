@@ -6,15 +6,16 @@ import { useRef, useState, useTransition } from "react";
 import { joinChain, needsName } from "@/app/(build)/chain/actions";
 import { LiveSheet } from "@/components/build/live-sheet";
 import { track as log } from "@/components/analytics";
-import { firstName, urlKey, type Entry, type Invite, type PageTrack } from "@/lib/chains";
-import { Bar, ChainHeader, ChainList, Cta, LastPlayed, PlayProvider, TrackPick, pickReady, type Pick } from "./ui";
+import { firstName, ROLE_COLOR, urlKey, type Entry, type Invite, type PageTrack } from "@/lib/chains";
+import { PROVIDER_LABEL, providerOf } from "@/lib/profile";
+import { Bar, ChainHeader, ChainList, Cta, LastPlayed, PlayButton, PlayFrame, PlayProvider, TrackPick, pickReady, type Pick } from "./ui";
 
 // Einladung annehmen (CHAIN-02..04): Track 1 hören, Track 2 wählen, erst dann einloggen
 export function JoinChain({ token, invite, page, loggedIn }: { token: string; invite: Invite | null; page: PageTrack[]; loggedIn: boolean }) {
   const router = useRouter();
   const [pick, setPick] = useState<Pick>({ track: null, comment: "" });
   const request = useRef<string | null>(null);
-  const [step, setStep] = useState<"pick" | "login" | "name">("pick");
+  const [step, setStep] = useState<"intro" | "pick" | "login" | "name">("intro");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -45,11 +46,13 @@ export function JoinChain({ token, invite, page, loggedIn }: { token: string; in
       await join();
     });
 
+  if (step === "intro") return <Intro invite={invite} first={first} onGo={() => setStep("pick")} />;
+
   return (
     <PlayProvider>
       <main className="flex flex-1 flex-col">
         <ChainHeader a={invite.creator_name} b={null} right={`TRACK 2 OF ${invite.target}`} />
-        <div className="grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-16 md:px-20 md:py-12">
+        <div className="mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-16 md:px-20 md:py-12">
           <div className="flex min-w-0 flex-col gap-5">
             <span className="label-mono text-ink-3">{host.toUpperCase()} INVITED YOU</span>
             <h1 className="text-[52px] font-extrabold leading-[0.88] tracking-[-0.06em] md:text-[84px]">Pick track 2.</h1>
@@ -134,10 +137,10 @@ function Closed({ invite }: { invite: Invite | null }) {
         : ["Someone else answered first.", `This round already has two DJs. Start your own and send it to ${host}.`];
   return (
     <>
-    <header className="flex h-14 items-center border-b border-line px-4 md:h-[72px] md:px-10">
+    <header className="mx-auto flex h-14 w-full max-w-[1440px] items-center px-4 md:h-[72px] md:px-10">
       <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
     </header>
-    <main className="flex flex-1 flex-col items-start gap-5 px-4 py-16 md:px-20 md:py-24">
+    <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col items-start gap-5 px-4 py-16 md:px-20 md:py-24">
       <span className="label-mono text-ink-3">TRACK CHAINS</span>
       <h1 className="max-w-[900px] text-[48px] font-extrabold leading-[0.9] tracking-[-0.06em] md:text-[80px]">{title}</h1>
       <p className="text-[17px] text-ink-2">{text}</p>
@@ -147,5 +150,95 @@ function Closed({ invite }: { invite: Invite | null }) {
       </span>
     </main>
     </>
+  );
+}
+
+const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
+
+// Einladung, erster Blick (Board DeskInvite): wer lädt ein, Track 1 hören, wie es geht; dann Track 2 wählen
+function Intro({ invite, first, onGo }: { invite: Invite; first: Entry; onGo: () => void }) {
+  const host = firstName(invite.creator_name);
+  const A = ROLE_COLOR.A;
+  const steps = [
+    { n: "01", title: `Listen to ${host}’s track`, text: "It plays right here, from the platform it lives on." },
+    { n: "02", title: "Answer with yours", text: "Paste a link to the track you’d play next. Add a line if you like." },
+    { n: "03", title: "Take turns until six", text: "We let you know when it’s your turn again. Then you both get the joint selection." },
+  ];
+  return (
+    <PlayProvider>
+      <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-4 pb-14 md:px-10">
+        <header className="flex h-16 items-center justify-between md:h-24">
+          <Link href="/" className="text-[24px] font-extrabold leading-none tracking-[-0.045em] md:text-[38px]">Selectorz</Link>
+          <span className="label-mono text-ink-3">TRACK CHAIN · INVITE</span>
+        </header>
+        <section className="mt-4 grid items-start gap-10 md:mt-10 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-[72px]">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-11 items-center gap-2.5 rounded-full pl-2 pr-[18px] text-[16px] font-semibold" style={{ background: A }}>
+                <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-ink font-mono text-[10px] font-semibold" style={{ color: A }}>{initials(invite.creator_name)}</span>
+                {invite.creator_name}
+              </span>
+              <span className="text-[17px] text-ink-2">invited you to a track chain</span>
+            </div>
+            <h1 className="text-[56px] font-extrabold leading-[0.86] tracking-[-0.06em] md:text-[112px]">What would you play next?</h1>
+            <p className="max-w-[540px] text-[17px] leading-[1.45] text-ink-2 md:text-[19px]">
+              {host} started with one record. Answer with yours, then take turns. Six tracks in total, and at the end you both get a joint selection to keep or share.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-6">
+              <button type="button" onClick={onGo} className="cta flex h-16 w-full items-center justify-between rounded-full border-2 border-ink bg-ink px-[26px] text-[18px] font-semibold text-night-t1 shadow-cta sm:w-[360px]">
+                Pick your track 2 <span aria-hidden className="cta-arrow">→</span>
+              </button>
+              <Link href="/" className="link-hover text-[15px] font-semibold underline underline-offset-[3px]">Not now</Link>
+            </div>
+            <p className="text-[14px] text-ink-3">No profile needed. You confirm your email when you send your track.</p>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            <section className="flex flex-col gap-2.5" aria-label={`${host} picked`}>
+              <span className="label-mono flex items-center gap-2 text-ink-3">
+                <span className="flex h-[22px] items-center rounded-full px-2 font-semibold text-ink" style={{ background: A }}>01</span>
+                {host.toUpperCase()} PICKED
+              </span>
+              <div className="flex flex-col rounded-[8px] border border-line bg-surface">
+                <div className="flex items-center gap-4 p-[22px]">
+                  <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <span className="text-[34px] font-extrabold leading-[0.92] tracking-[-0.04em] md:text-[44px] [overflow-wrap:anywhere]">{first.title}</span>
+                    <span className="text-[15px] text-ink-3">{[first.artist, PROVIDER_LABEL[providerOf(first.url)]].filter(Boolean).join(" · ")}</span>
+                  </span>
+                  <PlayButton id="intro" url={first.url} title={first.title} big />
+                </div>
+                {first.comment && <p className="px-[22px] pb-[18px] text-[18px] leading-[1.4]">“{first.comment}”</p>}
+                <div className="px-[22px] pb-3"><PlayFrame id="intro" url={first.url} title={first.title} /></div>
+                <p className="border-t border-line px-[22px] py-3 font-mono text-[10px] tracking-[0.06em] text-ink-3">PRESS PLAY TO LOAD THE {PROVIDER_LABEL[providerOf(first.url)].toUpperCase()} PLAYER</p>
+              </div>
+            </section>
+            <div className="flex flex-col gap-3.5 rounded-[8px] bg-night-bg p-[18px] text-night-t1" aria-hidden>
+              <span className="flex justify-between font-mono text-[10px] tracking-[0.1em] text-night-t3"><span>THE CHAIN SO FAR</span><span>1 OF {invite.target}</span></span>
+              <div className="grid grid-cols-6 items-end gap-2">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <span key={i} className="flex flex-col gap-2">
+                    <span className="rounded-[4px]" style={{ height: 40 + i * 14, background: i === 0 ? A : i === 1 ? "transparent" : "#2A2A2E", border: i === 1 ? "1.5px dashed #EDEDEA" : 0 }} />
+                    <span className="font-mono text-[10px] tracking-[0.06em]" style={{ color: i < 2 ? "#EDEDEA" : "#6A6A70" }}>
+                      {i === 0 ? `01 ${host.toUpperCase()}` : i === 1 ? "02 YOU" : `0${i + 1}`}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+        <section aria-label="How it works" className="mt-auto pt-16 md:pt-[72px]">
+          <ol className="grid grid-cols-1 border-t-2 border-ink md:grid-cols-3">
+            {steps.map((st) => (
+              <li key={st.n} className="flex flex-col gap-2 pr-6 pt-4">
+                <span className="label-mono text-ink-3">{st.n}</span>
+                <span className="text-[22px] font-semibold tracking-[-0.02em]">{st.title}</span>
+                <span className="text-[15px] leading-[1.45] text-ink-3">{st.text}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+    </PlayProvider>
   );
 }

@@ -12,7 +12,8 @@ import { copyText } from "@/lib/copy";
 // Kopf der Kettenseiten (Boards DeskChain*3): Logo, „A × B“ mit Personenfarben, rechts der Stand
 export function ChainHeader({ a, b, right }: { a: string; b: string | null; right: string }) {
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-line px-4 md:h-[72px] md:px-10">
+    <header className="border-b border-line">
+      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-4 px-4 md:h-[72px] md:px-10">
       <Link href="/home" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
       <span className="label-mono mx-auto hidden items-center gap-2 text-ink-2 sm:flex" aria-hidden>
         <span className="h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.A }} />
@@ -20,6 +21,7 @@ export function ChainHeader({ a, b, right }: { a: string; b: string | null; righ
         <span className="h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.B }} />
       </span>
       <span className="label-mono ml-auto text-ink-3 sm:ml-0">{right}</span>
+      </div>
     </header>
   );
 }
@@ -28,7 +30,7 @@ export function ChainHeader({ a, b, right }: { a: string; b: string | null; righ
 export function Bar({ note, children }: { note?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="sticky bottom-0 z-10 mt-auto border-t border-line bg-bg">
-      <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-20 md:py-5">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-20 md:py-5">
         {note ? <span className="text-[13px] leading-[1.4] text-ink-2 md:text-[15px]">{note}</span> : <span />}
         <span className="flex flex-col gap-2 md:flex-row md:items-center">{children}</span>
       </div>

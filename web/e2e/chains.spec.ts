@@ -33,6 +33,10 @@ async function joinAsNewcomer(browser: Browser, invite: string, track2 = sc("teo
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(invite);
+  // Erster Blick wie Board DeskInvite, dann Track 2 wählen
+  await expect(page.getByRole("heading", { name: "What would you play next?" })).toBeVisible();
+  await expect(page.getByText("invited you to a track chain")).toBeVisible();
+  await page.getByRole("button", { name: "Pick your track 2" }).click();
   await expect(page.getByRole("heading", { name: "Pick track 2." })).toBeVisible();
   await expect(page.getByText(/LUMA INVITED YOU/)).toBeVisible();
   await pickTrack(page, 2, track2, "Kept the dub, added a little shine.");

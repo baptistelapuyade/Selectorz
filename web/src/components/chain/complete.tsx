@@ -64,7 +64,7 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
   };
 
   return (
-    <div className={`done ${seen ? "done-seen" : ""} grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,544px)] md:gap-16 md:px-20 md:py-12`}>
+    <div className={`done ${seen ? "done-seen" : ""} mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,544px)] md:gap-16 md:px-20 md:py-12`}>
       <div className="flex min-w-0 flex-col gap-6">
         <span className="grid grid-cols-6 gap-1.5" aria-hidden>
           {c.entries.map((e, i) => (
