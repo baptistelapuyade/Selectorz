@@ -59,7 +59,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # „latest“ fragt die GitHub-API; bei Rate-Limit einmal nach kurzer Pause wiederholen
       - uses: supabase/setup-cli@v1
+        id: cli1
+        continue-on-error: true
+        with:
+          version: latest
+      - if: steps.cli1.outcome == 'failure'
+        run: sleep 30
+      - if: steps.cli1.outcome == 'failure'
+        uses: supabase/setup-cli@v1
         with:
           version: latest
       - name: Supabase lokal starten (nur Datenbank, Auth, API, Mailpit)
