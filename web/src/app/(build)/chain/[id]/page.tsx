@@ -27,7 +27,7 @@ async function Load({ params }: Props) {
         <Link href="/home" className="link-hover font-semibold underline underline-offset-4">Go to my rounds</Link>
       </main>
     );
-  return <ChainRoom initial={data as Chain} page={m.tracks} />;
+  return <ChainRoom initial={data as Chain} page={m.tracks} handle={m.handle} notify={m.notify} />;
 }
 
 export default function ChainPage(props: Props) {

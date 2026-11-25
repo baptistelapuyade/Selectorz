@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { Rounds } from "@/components/home/rounds";
+import { RoundStats, Rounds } from "@/components/home/rounds";
 import { ShareStory } from "@/components/home/share-story";
 import type { Round } from "@/lib/chains";
 import { fromServer, type EditState } from "@/lib/edit/model";
@@ -24,9 +24,10 @@ async function Content() {
   const first = (st?.draft.display_name ?? "").split(" ")[0];
   return (
     <>
-      <h1 className="border-b-2 border-ink pb-6 text-[56px] font-extrabold leading-[0.86] tracking-[-0.06em] md:pb-7 md:text-[84px]">
-        Hi{first ? ` ${first}` : ""}.
-      </h1>
+      <section className="flex flex-col gap-5 border-b-2 border-ink pb-6 md:flex-row md:items-end md:justify-between md:gap-10 md:pb-7">
+        <h1 className="text-[56px] font-extrabold leading-[0.86] tracking-[-0.06em] md:text-[84px]">Hi{first ? ` ${first}` : ""}.</h1>
+        {list.length > 0 && <RoundStats rounds={list} />}
+      </section>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[340px_minmax(0,1fr)] md:gap-12">
         <aside className="flex flex-col gap-3.5">
           <span className="label-mono pt-3.5 text-ink-3">Your page</span>
@@ -169,7 +170,8 @@ function NoRounds() {
 export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col">
-      <header className="flex h-14 items-center gap-4 border-b border-line px-4 md:h-[72px] md:gap-7 md:px-10">
+      <header className="border-b border-line">
+      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-4 px-4 md:h-[72px] md:gap-7 md:px-10">
         <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
         <nav className="hidden gap-1 md:flex" aria-label="Main">
           <span aria-current="page" className="flex h-[38px] items-center rounded-full bg-ink px-4 text-[14px] font-semibold text-night-t1">Your rounds</span>
@@ -185,8 +187,9 @@ export default function HomePage() {
             <button className="h-10 rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Log out</button>
           </form>
         </span>
+      </div>
       </header>
-      <div className="flex flex-col gap-0 px-4 py-8 md:px-20 md:py-10">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-0 px-4 py-8 md:px-20 md:pb-14 md:pt-11">
         <Suspense fallback={<div className="h-[600px]" />}>
           <Content />
         </Suspense>

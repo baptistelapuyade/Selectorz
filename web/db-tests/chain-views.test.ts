@@ -51,7 +51,7 @@ describe("Ketten lesen", () => {
     expect(ra[0]).toMatchObject({ id: chain_id, state: "waiting_for_partner", count: 1, my_turn: false, other: null });
     await join(b, invite_token);
     ra = await rounds(a);
-    expect(ra[0]).toMatchObject({ state: "active", count: 2, my_turn: true, other: { name: "Kofi", handle: null }, last: { mine: false } });
+    expect(ra[0]).toMatchObject({ state: "active", count: 2, my_turn: true, other: { name: "Kofi", handle: null }, last: { mine: false, position: 2, comment: "Answer.", url: expect.stringContaining("track-2-") } });
     const rb = await rounds(b);
     expect(rb[0]).toMatchObject({ my_role: "B", my_turn: false, other: { name: "Luma" } });
   });
@@ -89,5 +89,27 @@ describe("Ketten lesen", () => {
     const v = await view(a, chain_id);
     expect(v.participants.find((p: { role: string }) => p.role === "B").name).toBe("Kofi Mensah");
     expect(v.participants.find((p: { role: string }) => p.role === "A").name).toBe("Luma");
+  });
+
+  it("V6: Vergebene Einladung zeigt nur den Vornamen der zweiten Person; offene Einladung zeigt niemanden", async () => {
+    const a = await newUser("");
+    await publishedProfile(a, "Luma Reyes");
+    const { invite_token } = await start(a);
+    expect(await peek(null, invite_token)).toMatchObject({ partner_name: null, partner_color: null });
+    const b = await newUser("Ines Okafor");
+    await join(b, invite_token);
+    const p = await peek(null, invite_token);
+    expect(p).toMatchObject({ state: "active", partner_name: "Ines", invite_open: false });
+    expect(p.creator_color).not.toBeUndefined();
+  });
+
+  it("V7: Beendete Runde merkt sich, wer beendet hat", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const { chain_id, invite_token } = await start(a);
+    await join(b, invite_token);
+    await as(b, (q) => q("select public.end_chain($1)", [chain_id]));
+    expect(await view(b, chain_id)).toMatchObject({ state: "archived", ended_by_me: true });
+    expect(await view(a, chain_id)).toMatchObject({ state: "archived", ended_by_me: false });
   });
 });

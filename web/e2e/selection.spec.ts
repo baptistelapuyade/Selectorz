@@ -30,12 +30,12 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
   // Luma: Abschluss-Moment, dann Freigabe
   await page.goto(`/chain/${chain}`);
   await expect(page.getByRole("heading", { name: "Your selection is complete." })).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText("Show it publicly?", { exact: true })).toBeVisible();
+  await expect(page.locator("#pub-title")).toHaveText("Show it publicly?");
   await page.waitForTimeout(6500); // Animation einmal ganz durchlaufen lassen (fürs Video)
   await shot(page, "1-abschluss");
   await page.getByRole("button", { name: "Approve and make a story" }).click();
-  await expect(page.getByText("Waiting for Kofi’s yes.")).toBeVisible();
-  await expect(page.getByLabel("1 of 2 said yes")).toBeVisible();
+  await expect(page.locator("#pub-title")).toHaveText("Waiting for Kofi’s yes.");
+  await expect(page.getByLabel("1 of 2 said yes").filter({ visible: true })).toBeVisible();
 
   // Mit nur einer Freigabe: nichts öffentlich
   await visitor.goto(`/s/${chain}`);
@@ -47,7 +47,7 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
   await kofi.goto("/home");
   await expect(kofi.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Needs a yes");
   await kofi.goto(`/chain/${chain}`);
-  await expect(kofi.getByText("Show it publicly? Luma said yes.")).toBeVisible();
+  await expect(kofi.locator("#pub-title")).toHaveText("Show it publicly? Luma said yes.");
   await kofi.getByRole("button", { name: "Approve and make a story" }).click();
   const dialog = kofi.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Share your selection." })).toBeVisible();
@@ -61,7 +61,7 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
   }
   await shot(kofi, "2-story");
   await dialog.getByRole("button", { name: "Close ✕" }).click();
-  await expect(kofi.getByText("It’s public.")).toBeVisible();
+  await expect(kofi.locator("#pub-title")).toHaveText("It’s public.");
 
   // Öffentlich: Selection-Seite ausgeloggt lesbar, Profil zeigt die Karte
   await visitor.goto(`/s/${chain}`);
@@ -80,9 +80,9 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
 
   // Luma nimmt das Ja zurück: Seite und Karte sind weg, Profil bleibt
   await page.reload();
-  await expect(page.getByText("It’s public.")).toBeVisible();
+  await expect(page.locator("#pub-title")).toHaveText("It’s public.");
   await page.getByRole("button", { name: "Take back my yes" }).click();
-  await expect(page.getByText("Show it publicly? Kofi said yes.")).toBeVisible();
+  await expect(page.locator("#pub-title")).toHaveText("Show it publicly? Kofi said yes.");
   await visitor.goto(`/s/${chain}`);
   await expect(visitor.getByRole("heading", { name: /No page/ })).toBeVisible();
   await visitor.goto(`/${luma.handle}`);
