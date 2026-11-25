@@ -9,7 +9,11 @@ Gilt für jede Code-Änderung, ohne dass der Product Owner (Baptiste) es neu sag
    - Logik: Unit-Tests (Vitest).
    - Rechte, Zustände, Atomarität in der Datenbank: Datenbank-Tests gegen lokales Supabase (z. B. „C kann nach B-Beitritt nichts schreiben“, „zwei Tabs erzeugen genau einen Zug“).
    - Ganze Abläufe (Login, Kette, Veröffentlichen): Browser-Tests (Playwright) gegen lokales Supabase; Login-Mails werden über Mailpit abgefangen.
-3. **Bauen**, bis alle Tests grün sind.
+3. **Bauen**, bis alle Tests grün sind. **Jeder Screen wie sein Board** (Design-Leinwand „Selectorz Designrichtungen“, Ordner `project/`):
+   - Vor dem Bauen alle Boards des Ablaufs heraussuchen (mobil und Desktop, alle Zustände), damit kein Screen fehlt.
+   - Maße, Farben, Texte und Aufbau aus dem **Quelltext des Boards** übernehmen, nicht aus einem gerenderten Screenshot (Vorlagen-Werte rendern dort teils nicht).
+   - Vor dem PR jeden gebauten Screen neben sein Board legen, in drei Breiten: Handy (390 px), 1440 px, großes Display (2560 px). Inhalt bleibt in einem Container (meist höchstens 1440 px). Die Bilder kommen in den PR, Abweichungen stehen dort ausdrücklich.
+   - Ändert sich beim Coden ein sichtbarer Text oder ein Element, wird das Board mit angepasst; gebaute Screens stehen als „Built“-Boards daneben.
 4. **Freigabe:** Pull Request mit Plan, Abnahmekriterien und Testergebnis. GitHub-CI muss grün sein; Vercel-Vorschau zum Anschauen. Erst nach Freigabe durch den PO wird nach `main` gemergt. Nie direkt auf `main` pushen.
 
 Ehrlich berichten: Was nicht getestet werden konnte, steht ausdrücklich im Pull Request.
