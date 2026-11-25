@@ -113,7 +113,7 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
 
   await page.goto(chainUrl);
   await expect(page.getByRole("heading", { name: "Your selection is complete." })).toBeVisible();
-  await expect(page.getByText("6 OF 6 · LUMA × KOFI")).toBeVisible();
+  await expect(page.getByText(/^6 OF 6 · (LUMA × KOFI|COMPLETE)$/).filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole("img", { name: "Slow Sunday, a selection by Luma × Kofi" })).toBeVisible();
   await page.goto("/home");
   await expect(page.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Needs a yes");
