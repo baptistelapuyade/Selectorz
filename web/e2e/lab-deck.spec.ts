@@ -158,3 +158,14 @@ test("Bandcamp geladen, andere Platte vorn: Play legt sie auf", async ({ page })
   await play.click();
   await expect(page.getByText(/This loads the YouTube player/)).toBeVisible();
 });
+
+test("Pfeile bleiben auf großen Bildschirmen direkt neben der Kiste", async ({ page }) => {
+  await page.setViewportSize({ width: 2560, height: 1300 });
+  await setup(page);
+  const center = 2560 / 2;
+  const prev = (await page.getByRole("button", { name: "Previous record" }).boundingBox())!;
+  const next = (await page.getByRole("button", { name: "Next record" }).boundingBox())!;
+  expect(center - (prev.x + prev.width)).toBeLessThan(720);
+  expect(next.x - center).toBeLessThan(720);
+  expect(center - (prev.x + prev.width)).toBeGreaterThan(560); // nicht über den Hüllen
+});

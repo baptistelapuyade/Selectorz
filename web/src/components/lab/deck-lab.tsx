@@ -201,12 +201,12 @@ export function DeckLab() {
         <span className="label-mono text-ink-3 sm:hidden">Lab · Deck</span>
       </header>
 
-      <section className="px-[clamp(20px,4vw,56px)] pt-10 text-center">
+      <section className="relative z-10 px-[clamp(20px,4vw,56px)] pt-10 text-center">
         <p className="label-mono text-ink-3">DJ · Disco House · Ruff&apos;n House · Berlin</p>
         <h1 className="mx-auto mt-3 pb-[0.06em] text-[clamp(88px,12vw,170px)] font-extrabold leading-[0.95] tracking-[-0.06em]">{NAME}</h1>
       </section>
 
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-x-clip">
         <div className="relative h-[440px] [perspective:1800px]" role="group" aria-label="Crate">
           {items.map((it, i) => {
             const d = i - sel;
@@ -277,8 +277,8 @@ export function DeckLab() {
             );
           })}
         </div>
-        <button type="button" aria-label="Previous record" onClick={() => select(Math.max(0, sel - 1))} className="absolute left-[clamp(12px,3vw,40px)] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">‹</button>
-        <button type="button" aria-label="Next record" onClick={() => select(Math.min(items.length - 1, sel + 1))} className="absolute right-[clamp(12px,3vw,40px)] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">›</button>
+        <button type="button" aria-label="Previous record" onClick={() => select(Math.max(0, sel - 1))} className="absolute left-[max(12px,calc(50%-650px))] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">‹</button>
+        <button type="button" aria-label="Next record" onClick={() => select(Math.min(items.length - 1, sel + 1))} className="absolute right-[max(12px,calc(50%-650px))] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">›</button>
       </div>
 
       <section className="flex flex-col items-center gap-3 px-[clamp(20px,4vw,56px)] pb-16 text-center">
