@@ -66,6 +66,9 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
   await liveProfile(page, "Luma Reyes");
   const invite = await startChain(page);
   expect(invite).toMatch(/\/invite\/[\w-]+$/);
+  // Kopieren klappt auch ohne Zwischenablage-Berechtigung (Ausweg über markiertes Feld)
+  await page.getByRole("button", { name: "Copy link" }).click();
+  await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
   await page.getByRole("link", { name: "Done, go to my rounds" }).click();
   await expect(page.getByTestId("round-row").filter({ hasText: "Slow Sunday" })).toContainText("Invite open");
 

@@ -7,12 +7,13 @@ import { firstName } from "@/lib/chains";
 import { selectionUrl, type SelEntry, type SelPerson } from "@/lib/selection";
 import { isTouchDevice } from "@/lib/touch";
 import { drawSelectionStory, type StoryFormat } from "./selection-story";
+import { copyText } from "@/lib/copy";
 
 type Props = { id: string; title: string; people: SelPerson[]; entries: SelEntry[]; me: "A" | "B" | null; onClose: () => void };
 
 async function copy(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
+    if (!(await copyText(text))) throw new Error("copy");
     return true;
   } catch {
     return false;

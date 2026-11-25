@@ -6,10 +6,11 @@ import { track } from "@/components/analytics";
 import { drawStory, type StoryData } from "@/components/build/story-card";
 import { useClosable } from "@/components/use-closable";
 import { storyUrl } from "@/lib/story";
+import { copyText } from "@/lib/copy";
 
 async function copy(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
+    if (!(await copyText(text))) throw new Error("copy");
     return true;
   } catch {
     return false;

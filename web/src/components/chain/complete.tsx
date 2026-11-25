@@ -8,6 +8,7 @@ import { Record } from "@/components/selection/record";
 import { SelectionStoryDialog } from "@/components/selection/selection-story-dialog";
 import { firstName, type Chain } from "@/lib/chains";
 import { palette, selectionPath, selectionTitle, type SelPerson } from "@/lib/selection";
+import { copyText } from "@/lib/copy";
 
 const seenKey = (id: string) => `selectorz:done:${id}`;
 const noop = () => () => {};
@@ -56,7 +57,7 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
 
   const ask = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      if (!(await copyText(window.location.href))) throw new Error("copy");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}

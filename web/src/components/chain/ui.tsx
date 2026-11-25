@@ -7,6 +7,7 @@ import { track as log } from "@/components/analytics";
 import { firstName, ROLE_COLOR, urlKey as urlKeyOf, type Entry, type PageTrack, type Role } from "@/lib/chains";
 import type { DraftTrack } from "@/lib/build/draft";
 import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
+import { copyText } from "@/lib/copy";
 
 // Kopf der Kettenseiten (Boards DeskChain*3): Logo, „A × B“ mit Personenfarben, rechts der Stand
 export function ChainHeader({ a, b, right }: { a: string; b: string | null; right: string }) {
@@ -196,7 +197,7 @@ export function ShareChips({ url, text, disabled }: { url: string | null; text: 
         <button type="button" disabled={off} className={chip}
           onClick={async () => {
             try {
-              await navigator.clipboard.writeText(url!);
+              if (!(await copyText(url!))) throw new Error("copy");
               setNote("Link copied. Paste it into an Instagram DM.");
             } catch {
               setNote("Copy the link above and paste it into an Instagram DM.");
@@ -222,7 +223,7 @@ export function InviteCard({ url, onRenew, onRevoke, busy, title = "Who plays tr
   const copy = async () => {
     if (!url) return;
     try {
-      await navigator.clipboard.writeText(url);
+      if (!(await copyText(url))) throw new Error("copy");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
