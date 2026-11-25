@@ -55,7 +55,7 @@ export async function liveProfileUser(page: Page, name = "Luma Reyes") {
   } finally {
     c.release();
   }
-  return { handle, uid };
+  return { handle, uid, email };
 }
 
 // SQL als eingeloggte Person (wie über die API: Rolle authenticated, auth.uid() = uid)

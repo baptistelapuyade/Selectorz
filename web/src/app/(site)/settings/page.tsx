@@ -36,8 +36,8 @@ async function SettingsContent() {
           <label className="flex items-start gap-3 text-[16px]">
             <input type="checkbox" name="notify_email" defaultChecked={account?.notify_email ?? true} className="mt-1 h-5 w-5 accent-ink" />
             <span className="flex flex-col">
-              <span className="font-semibold">Email when it&apos;s my turn</span>
-              <span className="text-[14px] text-ink-3">One mail per move. Includes the link.</span>
+              <span className="font-semibold">Track chain emails</span>
+              <span className="text-[14px] text-ink-3">When it&apos;s your turn, one reminder if a turn stays open for three days, and when a chain is complete.</span>
             </span>
           </label>
           <button className="h-11 self-start rounded-full border-[1.5px] border-ink px-5 text-[14px] font-semibold hover:bg-ink hover:text-night-t1">Save</button>

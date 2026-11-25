@@ -55,7 +55,7 @@ test("5 · Mail-Einstellung wird gespeichert, Entblocken funktioniert", async ({
   await db.query("insert into public.blocks (blocker_id, blocked_id) values ($1, $2)", [me, rows[0].id]);
 
   await page.goto("/settings");
-  const box = page.getByLabel(/email when it's my turn/i);
+  const box = page.getByLabel(/track chain emails/i);
   await expect(box).toBeChecked();
   await box.uncheck();
   // auf die Server-Antwort warten, sonst lädt der Test neu, bevor gespeichert ist
@@ -64,7 +64,7 @@ test("5 · Mail-Einstellung wird gespeichert, Entblocken funktioniert", async ({
     page.getByRole("button", { name: "Save" }).click(),
   ]);
   await page.reload();
-  await expect(page.getByLabel(/email when it's my turn/i)).not.toBeChecked();
+  await expect(page.getByLabel(/track chain emails/i)).not.toBeChecked();
 
   await expect(page.getByText("Marlon")).toBeVisible();
   await page.getByRole("button", { name: "Unblock" }).click();

@@ -3,6 +3,8 @@
 import { randomUUID } from "node:crypto";
 import type { Chain } from "@/lib/chains";
 import { updateTag } from "next/cache";
+import { after } from "next/server";
+import { processNotifications } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/server";
 
 export type PickedTrack = { url: string; title: string; artist?: string };
@@ -80,6 +82,7 @@ export async function addTrack(id: string, position: number, t: PickedTrack, com
     const now = await getChain(id);
     return now.ok ? { ...f, chain: now.chain } as Fail : f;
   }
+  after(() => processNotifications()); // Mail an die andere Person nach der Antwort (NOTIFY-08)
   return getChain(id);
 }
 
@@ -122,6 +125,7 @@ export async function joinChain(token: string, t: PickedTrack, comment: string, 
     p_request_id: request,
   });
   if (error || !data) return fail(error?.message);
+  after(() => processNotifications());
   return { ok: true, chain: data as string };
 }
 
