@@ -114,6 +114,11 @@ export function DotChain({ c, names, next, other, eyebrow, small }: {
         {small ? <span className="label-mono text-night-t2">{eyebrow}</span> : <span className="flex gap-4">{legend}</span>}
       </span>
       <span aria-hidden className={`grid ${small ? "gap-[3px]" : "gap-1"}`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>{cells}</span>
+      {!small && (
+        <span aria-hidden className="grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+          {Array.from({ length: n }, (_, i) => <span key={i} className="font-mono text-[10px] tracking-[0.12em] text-night-t2">{String(i + 1).padStart(2, "0")}</span>)}
+        </span>
+      )}
       {small && <span className="flex gap-4">{legend}</span>}
     </div>
   );

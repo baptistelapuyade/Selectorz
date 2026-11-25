@@ -116,16 +116,18 @@ export function ChainRoom({ initial, page, handle = null, notify = true }: { ini
   if (c.state === "active" && c.my_turn) {
     body = (
       <>
-        <span className="label-mono text-ink-3">{last ? `${otherName.toUpperCase()} ANSWERED · ${ago(last.created_at).toUpperCase()}` : `${otherName.toUpperCase()} ANSWERED`}</span>
-        <h1 className="text-[44px] font-extrabold leading-[0.9] tracking-[-0.06em] md:text-[56px] xl:text-[68px]">Your turn. Track {next} of {c.target}.</h1>
+        <span className="label-mono hidden text-ink-3 md:block">{last ? `${otherName.toUpperCase()} ANSWERED · ${ago(last.created_at).toUpperCase()}` : `${otherName.toUpperCase()} ANSWERED`}</span>
+        <h1 className="mt-1 text-[44px] font-extrabold leading-[0.9] tracking-[-0.05em] md:mt-0 md:text-[56px] md:tracking-[-0.06em] xl:text-[68px]">
+          <span className="md:hidden">Pick track {next}</span><span className="hidden md:inline">Your turn. Track {next} of {c.target}.</span>
+        </h1>
         {last && <LastPlayed e={last} who={otherName} />}
-        <h2 className="pt-2 text-[20px] font-semibold">Your answer</h2>
+        <h2 className="hidden pt-2 text-[20px] font-semibold md:block">Your answer</h2>
         <TrackPick value={pick} onChange={setPick} page={page} n={next} taken={taken} />
         {endButton}
       </>
     );
     bar = (
-      <Bar note={`We email ${otherName} when it’s in. You can send the link yourself too.`}>
+      <Bar noteBelow note={`We email ${otherName} when it’s in. You can send the link yourself too.`}>
         <Cta onClick={send} disabled={!pickReady(pick, taken) || pending}>{pending ? "Sending…" : `Send track ${next}`}</Cta>
       </Bar>
     );
@@ -173,13 +175,13 @@ export function ChainRoom({ initial, page, handle = null, notify = true }: { ini
   return (
     <PlayProvider>
       <main className="flex flex-1 flex-col">
-        <ChainHeader a={names.A || "You"} b={names.B || null} right={right} />
-        <div className="mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-16 md:px-20 md:py-12">
+        <ChainHeader a={names.A || "You"} b={names.B || null} right={right} mobileTitle={c.state === "active" && c.my_turn ? "Your turn" : undefined} />
+        <div className={`mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] ${c.state === "active" && c.my_turn ? "pb-8 pt-1" : "py-8"} md:gap-16 md:px-20 md:py-12`}>
           <div className="flex min-w-0 flex-col gap-5">
             {body}
             {error && <p key={error} role="alert" className="shake text-[14px] text-error-text">{error}</p>}
           </div>
-          <div className="min-w-0">{list}</div>
+          <div className={`min-w-0 ${c.state === "active" && c.my_turn ? "hidden md:block" : ""}`}>{list}</div>
         </div>
         {bar}
       </main>

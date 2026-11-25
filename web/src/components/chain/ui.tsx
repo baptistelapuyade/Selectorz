@@ -10,11 +10,17 @@ import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
 import { copyText } from "@/lib/copy";
 
 // Kopf der Kettenseiten (Boards DeskChain*3): Logo, „A × B“ mit Personenfarben, rechts der Stand
-export function ChainHeader({ a, b, right, rightMobile }: { a: string; b: string | null; right: string; rightMobile?: string }) {
+export function ChainHeader({ a, b, right, rightMobile, mobileTitle }: { a: string; b: string | null; right: string; rightMobile?: string; mobileTitle?: string }) {
   return (
     <header className="border-b border-line">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-4 px-4 md:h-[72px] md:px-10">
-      <Link href="/home" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
+      {mobileTitle && (
+        <Link href="/home" aria-label="Back to your rounds" className="-ml-3 flex items-center gap-1 text-[16px] font-semibold md:hidden">
+          <span className="flex h-11 w-11 items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden><path d="M19 12H5" /><path d="M11 6l-6 6 6 6" /></svg></span>
+          {mobileTitle}
+        </Link>
+      )}
+      <Link href="/home" className={`text-[18px] font-extrabold tracking-[-0.03em] md:block md:text-[26px] md:tracking-[-0.045em] ${mobileTitle ? "hidden" : ""}`}>Selectorz</Link>
       <span className="label-mono mx-auto hidden items-center gap-2 text-ink-2 sm:flex" aria-hidden>
         <span className="h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.A }} />
         {firstName(a).toUpperCase()} × {b ? firstName(b).toUpperCase() : "?"}
@@ -27,11 +33,11 @@ export function ChainHeader({ a, b, right, rightMobile }: { a: string; b: string
 }
 
 // Untere Leiste mit Hinweis links und Hauptknopf rechts
-export function Bar({ note, children }: { note?: React.ReactNode; children: React.ReactNode }) {
+export function Bar({ note, children, noteBelow }: { note?: React.ReactNode; children: React.ReactNode; noteBelow?: boolean }) {
   return (
     <div className="sticky bottom-0 z-10 mt-auto border-t border-line bg-bg">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-20 md:py-5">
-        {note ? <span className="text-[13px] leading-[1.4] text-ink-2 md:text-[15px]">{note}</span> : <span />}
+      <div className={`mx-auto flex w-full max-w-[1440px] gap-3 px-4 md:flex-row md:items-center md:justify-between md:px-20 md:py-5 ${noteBelow ? "flex-col-reverse gap-2.5 pb-6 pt-[18px]" : "flex-col py-4"}`}>
+        {note ? <span className={`text-[13px] leading-[1.4] text-ink-2 md:text-left md:text-[15px] ${noteBelow ? "text-center" : ""}`}>{note}</span> : <span />}
         <span className="flex flex-col gap-2 md:flex-row md:items-center">{children}</span>
       </div>
     </div>
@@ -81,9 +87,9 @@ export function usePlay(id: string, url: string) {
   };
 }
 
-export function PlayButton({ id, url, title, big, dark, fill }: { id: string; url: string; title: string; big?: boolean; dark?: boolean; fill?: string }) {
+export function PlayButton({ id, url, title, big, dark, fill, sm }: { id: string; url: string; title: string; big?: boolean; dark?: boolean; fill?: string; sm?: boolean }) {
   const { src, playing, toggle } = usePlay(id, url);
-  const size = big ? "h-12 w-12 md:h-14 md:w-14" : "h-10 w-10";
+  const size = sm ? "h-10 w-10 md:h-14 md:w-14" : big ? "h-12 w-12 md:h-14 md:w-14" : "h-10 w-10";
   if (!src)
     return (
       <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${title} on ${PROVIDER_LABEL[providerOf(url)]}`}
@@ -110,15 +116,17 @@ export function PlayFrame({ id, url, title }: { id: string; url: string; title: 
 export function LastPlayed({ e, who }: { e: Entry; who: string }) {
   const id = `e${e.position}`;
   return (
-    <section className="rounded-[18px] bg-night-bg p-5 text-night-t1 md:px-[60px] md:py-6" aria-label={`${who} played`}>
-      <div className="relative flex items-center gap-4">
+    <section className="order-first mt-1 rounded-[12px] bg-night-bg px-3.5 py-3 text-night-t1 md:order-none md:mt-0 md:rounded-[18px] md:px-[60px] md:py-6" aria-label={`${who} played`}>
+      <div className="relative flex items-center gap-3 md:gap-4">
         <span className="md:absolute md:-left-[46px]"><Num n={e.position} role={e.role} /></span>
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="label-mono text-night-t3">{who.toUpperCase()} PLAYED</span>
-          <span className="text-[22px] font-extrabold leading-tight tracking-[-0.035em] md:text-[24px] [overflow-wrap:anywhere]">{e.title}{e.artist ? ` · ${e.artist}` : ""}</span>
-          {e.comment && <span className="text-[15px] italic text-night-t2">“{e.comment}”</span>}
+        <span className="flex min-w-0 flex-1 flex-col gap-[3px] md:gap-1">
+          <span className="label-mono text-night-t2 md:text-night-t3">{who.toUpperCase()} PLAYED</span>
+          <span className="text-[15px] font-semibold [overflow-wrap:anywhere] md:text-[24px] md:font-extrabold md:leading-tight md:tracking-[-0.035em]">
+            {e.title}{e.artist && <span className="font-normal text-night-t2 md:font-extrabold md:text-night-t1"> · {e.artist}</span>}
+          </span>
+          {e.comment && <span className="text-[13px] italic text-night-t2 md:text-[15px]">“{e.comment}”</span>}
         </span>
-        <PlayButton id={id} url={e.url} title={e.title} big dark />
+        <PlayButton id={id} url={e.url} title={e.title} big sm dark />
       </div>
       <PlayFrame id={id} url={e.url} title={e.title} />
     </section>
@@ -189,7 +197,10 @@ export function Progress({ entries, target }: { entries: { role: Role }[]; targe
 export function ShareChips({ url, text, disabled, grid }: { url: string | null; text: string; disabled?: boolean; grid?: boolean }) {
   const [note, setNote] = useState<string | null>(null);
   const canShare = useSyncExternalStore(noop, () => typeof navigator !== "undefined" && !!navigator.share, () => false);
-  const chip = "flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[14px] font-semibold disabled:opacity-40 hover:border-ink";
+  // Mobil im Raster (ChainHandoff2): zentriert, graue Fläche ohne Rand; sonst weiß mit Rand
+  const chip = grid
+    ? "flex h-11 items-center justify-center gap-2 rounded-full bg-surface-sunken px-4 text-[14px] font-semibold disabled:opacity-40 md:justify-start md:border md:border-line md:bg-surface md:hover:border-ink"
+    : "flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[14px] font-semibold disabled:opacity-40 hover:border-ink";
   const dot = (c: string) => <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: c }} />;
   const msg = url ? `${text} ${url}` : "";
   const off = disabled || !url;
@@ -303,10 +314,10 @@ export function TrackPick({ value, onChange, page, n, taken }: {
   return (
     <div className="flex flex-col gap-4">
       {page.length > 0 && (
-        <span role="tablist" className="flex self-start rounded-full bg-[rgba(17,17,17,0.08)] p-1">
+        <span role="tablist" className="grid grid-cols-2 rounded-full bg-[rgba(17,17,17,0.08)] p-1 md:flex md:self-start">
           {(["link", "page"] as const).map((t) => (
             <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)}
-              className={`flex h-10 items-center gap-2 rounded-full px-[18px] text-[14px] font-semibold ${tab === t ? "bg-ink text-night-t1" : ""}`}>
+              className={`flex h-10 items-center justify-center gap-2 rounded-full px-[18px] text-[14px] font-semibold ${tab === t ? "bg-ink text-night-t1" : ""}`}>
               {t === "link" ? "Paste a link" : <>From your page <span className="font-mono text-[10px] opacity-80">{page.length}</span></>}
             </button>
           ))}
@@ -320,19 +331,21 @@ export function TrackPick({ value, onChange, page, n, taken }: {
               const on = value.track?.url === t.url;
               const used = taken.includes(urlKeyOf(t.url));
               return (
-                <li key={t.url} className="flex items-center gap-3.5 rounded-[12px] bg-surface px-3.5 py-3" style={on ? { boxShadow: "0 0 0 2px #111111" } : undefined}>
+                <li key={t.url} className="flex items-center gap-3 rounded-[12px] bg-surface p-3 md:gap-3.5 md:px-3.5" style={on ? { boxShadow: "0 0 0 2px #111111" } : undefined}>
                   <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                    <span className="line-clamp-2 text-[16px] font-semibold leading-[1.2]">{t.title}</span>
+                    <span className="line-clamp-2 text-[15px] font-semibold leading-[1.2] md:text-[16px]">{t.title}</span>
                     {t.artist && <span className="truncate text-[13px] text-ink-2">{t.artist}</span>}
                     <span className="font-mono text-[10px] tracking-[0.12em] text-ink-3">{`${t.from} · ${PROVIDER_LABEL[providerOf(t.url)]}`.toUpperCase()}{used ? " · ALREADY IN THIS ROUND" : ""}</span>
                   </span>
-                  <button type="button" disabled={used} aria-pressed={on}
+                  {/* Mobil ein runder Auswahlknopf (ChainYourTurn2), Desktop „Use this“ (DeskChainYourTurnList3) */}
+                  <button type="button" disabled={used} aria-pressed={on} aria-label={`Use ${t.title}`}
                     onClick={() => {
                       onChange({ ...value, track: { url: t.url, title: t.title, artist: t.artist, provider: providerOf(t.url), fetched: "ok" } });
                       setKey((k) => k + 1);
                     }}
-                    className={`h-9 flex-none rounded-full px-3.5 text-[13px] font-semibold disabled:opacity-40 ${on ? "bg-ink text-night-t1" : "border-[1.5px] border-ink"}`}>
-                    {on ? "Selected" : "Use this"}
+                    className={`flex flex-none items-center justify-center rounded-full disabled:opacity-40 max-md:h-7 max-md:w-7 md:h-9 md:px-3.5 md:text-[13px] md:font-semibold ${on ? "bg-ink text-night-t1" : "border-[1.5px] border-field-border md:border-ink"}`}>
+                    <span className="hidden md:inline">{on ? "Selected" : "Use this"}</span>
+                    {on && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden className="md:hidden"><path d="M5 12l5 5 9-10" /></svg>}
                   </button>
                 </li>
               );
