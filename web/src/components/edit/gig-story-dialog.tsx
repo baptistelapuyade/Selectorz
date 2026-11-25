@@ -6,12 +6,13 @@ import { track } from "@/components/analytics";
 import { useClosable } from "@/components/use-closable";
 import { storyUrl } from "@/lib/story";
 import { drawGigStory, type GigStoryData } from "./gig-story";
+import { copyText } from "@/lib/copy";
 
 type Props = { base: Omit<GigStoryData, "kind" | "gigs">; one: GigStoryData["gigs"][number]; all: GigStoryData["gigs"]; start: "one" | "all"; onClose: () => void };
 
 async function copy(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
+    if (!(await copyText(text))) throw new Error("copy");
     return true;
   } catch {
     return false;

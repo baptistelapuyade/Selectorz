@@ -10,6 +10,7 @@ import { palette } from "@/lib/selection";
 import { Complete } from "./complete";
 import { inviteKey, rememberInvite } from "./start-chain";
 import { Bar, ChainHeader, ChainList, Cta, InviteCard, LastPlayed, PlayProvider, Progress, ShareChips, TrackPick, pickReady, type Pick } from "./ui";
+import { copyText } from "@/lib/copy";
 
 // Die Runde (CHAIN-05..10): dein Zug, warten, Einladung offen, fertig, beendet
 export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[] }) {
@@ -221,7 +222,7 @@ function CopyHere() {
       type="button"
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(window.location.href);
+          if (!(await copyText(window.location.href))) throw new Error("copy");
           setDone(true);
           setTimeout(() => setDone(false), 2000);
         } catch {}

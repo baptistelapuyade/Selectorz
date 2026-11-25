@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { track } from "@/components/analytics";
+import { copyText } from "@/lib/copy";
 
 export function ShareButton({ name, color }: { name: string; color: string }) {
   const [copied, setCopied] = useState(false);
@@ -19,7 +20,7 @@ export function ShareButton({ name, color }: { name: string; color: string }) {
         } catch {
           return; // abgebrochen
         }
-        await navigator.clipboard?.writeText(url);
+        if (!(await copyText(url))) return;
         setCopied(true);
         track("profile_link_copied");
         setTimeout(() => setCopied(false), 2000);

@@ -6,10 +6,11 @@ import { useEffect, useState } from "react";
 import { track } from "@/components/analytics";
 import { storyUrl } from "@/lib/story";
 import { drawStory, type StoryData } from "./story-card";
+import { copyText } from "@/lib/copy";
 
 async function copy(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
+    if (!(await copyText(text))) throw new Error("copy");
     return true;
   } catch {
     return false;
