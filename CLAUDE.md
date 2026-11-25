@@ -13,7 +13,7 @@ Gilt für jede Code-Änderung, ohne dass der Product Owner (Baptiste) es neu sag
    - Vor dem Bauen alle Boards des Ablaufs heraussuchen (mobil und Desktop, alle Zustände), damit kein Screen fehlt.
    - Maße, Farben, Texte und Aufbau aus dem **Quelltext des Boards** übernehmen, nicht aus einem gerenderten Screenshot (Vorlagen-Werte rendern dort teils nicht).
    - Vor dem PR jeden gebauten Screen neben sein Board legen, in drei Breiten: Handy (390 px), 1440 px, großes Display (2560 px). Inhalt bleibt in einem Container (meist höchstens 1440 px). Die Bilder kommen in den PR, Abweichungen stehen dort ausdrücklich.
-   - Ändert sich beim Coden ein sichtbarer Text oder ein Element, wird das Board mit angepasst; gebaute Screens stehen als „Built“-Boards daneben.
+   - Ändert sich beim Coden ein sichtbarer Text oder ein Element, wird das Board mit angepasst. Gebaute Screens kommen nicht auf die Leinwand (keine „Built“-Boards); der Vergleich Board ↔ gebaut liegt als Seite im PR.
 4. **Freigabe:** Pull Request mit Plan, Abnahmekriterien und Testergebnis. GitHub-CI muss grün sein; Vercel-Vorschau zum Anschauen. Erst nach Freigabe durch den PO wird nach `main` gemergt. Nie direkt auf `main` pushen.
 
 Ehrlich berichten: Was nicht getestet werden konnte, steht ausdrücklich im Pull Request.
