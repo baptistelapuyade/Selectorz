@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupOf, roundTitle, statusLine, urlKey, type Round } from "./chains";
+import { firstName, groupOf, roundTitle, statusLine, urlKey, type Round } from "./chains";
 
 const r = (x: Partial<Round>): Round => ({
   id: "1", title: "", state: "active", target: 6, count: 2, my_role: "A", my_turn: true,
@@ -38,5 +38,13 @@ describe("pageTracks", () => {
         { kind: "tracks", visible: false, content: { tracks: [t("hidden")] } },
       ]).map((x) => x.title),
     ).toEqual(["one", "two"]);
+  });
+  it("Vorname: DJ-/MC-Präfix bleibt mit dem nächsten Wort zusammen", () => {
+    expect(firstName("Kofi Mensah")).toBe("Kofi");
+    expect(firstName("Dj Hardcore googoo gaga")).toBe("Dj Hardcore");
+    expect(firstName("DJ Koze")).toBe("DJ Koze");
+    expect(firstName("MC Lyte")).toBe("MC Lyte");
+    expect(firstName("Djrum")).toBe("Djrum");
+    expect(firstName("DJ")).toBe("DJ");
   });
 });

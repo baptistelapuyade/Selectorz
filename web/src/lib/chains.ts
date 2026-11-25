@@ -66,7 +66,12 @@ export const ago = (iso: string, now = Date.now()) => {
 // Personenfarben: A lila, B orange (Format Six, Boards Section 05)
 export const ROLE_COLOR: Record<Role, string> = { A: "#8C93FF", B: "#F0532A" };
 
-export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+// Vorname für Texte („Kofi answered“). DJ-/MC-Präfix bleibt mit dem nächsten Wort zusammen: „Dj Hardcore“, nicht „Dj“
+export const firstName = (name: string) => {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return name;
+  return /^(dj|mc)\.?$/i.test(w[0]) && w[1] ? `${w[0]} ${w[1]}` : w[0];
+};
 
 export const roundTitle = (r: { title: string; other: { name: string } | null }) => r.title || (r.other ? `With ${firstName(r.other.name)}` : "New round");
 
