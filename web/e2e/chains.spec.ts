@@ -192,6 +192,20 @@ test("K4: Zwei Tabs, ein Zug: der zweite Klick bekommt den aktuellen Stand", asy
   await kofi.ctx.close();
 });
 
+test("K6: Musik stoppt beim Verlassen der Runde (PO-Feedback 25.11.)", async ({ page }) => {
+  test.setTimeout(60_000);
+  await liveProfile(page, "Luma Reyes");
+  const invite = await startChain(page, "Stop On Leave");
+  await page.goto(invite);
+  await expect(page.getByRole("heading", { name: "Waiting for track 2." })).toBeVisible();
+  await page.getByRole("button", { name: /^Play / }).first().click();
+  await expect(page.locator("iframe")).toHaveCount(1);
+  await page.getByRole("link", { name: "Go to my rounds" }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  // Next behält die alte Seite versteckt im DOM (Activity): der Player darf dort nicht weiterlaufen
+  await expect(page.locator("iframe")).toHaveCount(0);
+});
+
 test("K5: Kette starten braucht Login", async ({ page }) => {
   await page.goto("/chain/new");
   await expect(page).toHaveURL(/\/login\?next=(%2F|\/)chain(%2F|\/)new/);
