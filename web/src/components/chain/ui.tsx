@@ -7,7 +7,6 @@ import { track as log } from "@/components/analytics";
 import { firstName, ROLE_COLOR, urlKey as urlKeyOf, type Entry, type PageTrack, type Role } from "@/lib/chains";
 import type { DraftTrack } from "@/lib/build/draft";
 import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
-import { isTouchDevice } from "@/lib/touch";
 
 // Kopf der Kettenseiten (Boards DeskChain*3): Logo, „A × B“ mit Personenfarben, rechts der Stand
 export function ChainHeader({ a, b, right }: { a: string; b: string | null; right: string }) {
@@ -180,12 +179,46 @@ export function Progress({ entries, target }: { entries: { role: Role }[]; targe
   );
 }
 
-// Einladungslink: kopieren, teilen; ersetzen, zurückziehen (CHAIN-01, CHAIN-02)
-export function InviteCard({ url, onRenew, onRevoke, busy, title = "Who plays track 2?" }: {
-  url: string | null; onRenew: () => void; onRevoke: () => void; busy: boolean; title?: string;
+// Teilen-Knöpfe wie im Board (DeskChainStart3, NOTIFY-08): WhatsApp, Instagram, Telegram, More…
+// Instagram hat keinen Web-Teilen-Link: Link wird kopiert, Hinweis zum Einfügen in eine DM.
+export function ShareChips({ url, text, disabled }: { url: string | null; text: string; disabled?: boolean }) {
+  const [note, setNote] = useState<string | null>(null);
+  const canShare = useSyncExternalStore(noop, () => typeof navigator !== "undefined" && !!navigator.share, () => false);
+  const chip = "flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[14px] font-semibold disabled:opacity-40 hover:border-ink";
+  const dot = (c: string) => <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: c }} />;
+  const msg = url ? `${text} ${url}` : "";
+  const off = disabled || !url;
+  return (
+    <span className="flex flex-col gap-2">
+      <span className="flex flex-wrap gap-2">
+        <a aria-disabled={off} href={off ? undefined : `https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noopener noreferrer"
+          className={`${chip} ${off ? "pointer-events-none opacity-40" : ""}`}>{dot("#25D366")}WhatsApp</a>
+        <button type="button" disabled={off} className={chip}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(url!);
+              setNote("Link copied. Paste it into an Instagram DM.");
+            } catch {
+              setNote("Copy the link above and paste it into an Instagram DM.");
+            }
+          }}>{dot("#D6249F")}Instagram</button>
+        <a aria-disabled={off} href={off ? undefined : `https://t.me/share/url?url=${encodeURIComponent(url ?? "")}&text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer"
+          className={`${chip} ${off ? "pointer-events-none opacity-40" : ""}`}>{dot("#2AABEE")}Telegram</a>
+        {canShare && (
+          <button type="button" disabled={off} className={chip} onClick={() => navigator.share({ text, url: url! }).catch(() => {})}>More…</button>
+        )}
+      </span>
+      {note && <span role="status" className="text-[13px] text-ok">{note}</span>}
+    </span>
+  );
+}
+
+// Einladungslink (Board DeskChainStart3): weiße Karte, Link kopieren, teilen, Fortschritt; ersetzen, abschalten.
+// pending: Track 1 ist noch nicht gespeichert, die Karte zeigt schon, was kommt.
+export function InviteCard({ url, onRenew, onRevoke, busy, title = "Who plays track 2?", pending, entries = [{ role: "A" }] }: {
+  url: string | null; onRenew?: () => void; onRevoke?: () => void; busy: boolean; title?: string; pending?: boolean; entries?: { role: Role }[];
 }) {
   const [copied, setCopied] = useState(false);
-  const touch = useSyncExternalStore(noop, isTouchDevice, () => false);
   const copy = async () => {
     if (!url) return;
     try {
@@ -197,43 +230,56 @@ export function InviteCard({ url, onRenew, onRevoke, busy, title = "Who plays tr
     }
   };
   return (
-    <section className="flex flex-col gap-4 rounded-[22px] bg-surface p-5 shadow-modal md:p-8" aria-labelledby="invite-title">
+    <section className="flex flex-col gap-5 rounded-[22px] bg-surface p-5 shadow-[0_1px_2px_rgba(17,17,17,0.06),0_24px_60px_rgba(17,17,17,0.08)] md:p-8" aria-labelledby="invite-title">
       <span className="flex items-center gap-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink font-mono text-[12px] text-night-t1">2</span>
-        <span className="text-[18px] font-semibold">Invite one DJ</span>
+        <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-ink font-mono text-[12px] font-semibold text-night-t1">2</span>
+        <span className="text-[20px] font-semibold tracking-[-0.02em]">Invite one DJ</span>
       </span>
-      <h2 id="invite-title" className="text-[32px] font-extrabold leading-[0.95] tracking-[-0.05em] md:text-[40px]">{title}</h2>
-      {url ? (
+      <h2 id="invite-title" className="text-[32px] font-extrabold leading-[0.92] tracking-[-0.045em] md:text-[40px]">{title}</h2>
+      {url || pending ? (
         <>
-          <span className="flex flex-col gap-2 sm:flex-row">
-            <input readOnly value={url} aria-label="Your invite link" onFocus={(e) => e.target.select()} className="h-14 min-w-0 flex-1 rounded-s bg-bg px-4 text-[15px] font-semibold outline-none" />
-            <button type="button" onClick={copy} className="cta h-14 flex-none rounded-full bg-ink px-6 text-[16px] font-semibold text-night-t1 shadow-cta">
+          <span className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input readOnly value={url ?? ""} placeholder="Your link appears here" aria-label="Your invite link" onFocus={(e) => e.target.select()}
+              className="h-14 min-w-0 flex-1 rounded-s border border-[#F4F4F1] bg-[#F4F4F1] px-4 text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-ink-3" />
+            <button type="button" onClick={copy} disabled={!url} className="cta h-14 flex-none rounded-full bg-ink px-6 text-[16px] font-semibold text-night-t1 shadow-cta disabled:bg-field-border disabled:shadow-none">
               {copied ? "Copied" : "Copy link"}
             </button>
           </span>
-          {touch && (
-            <button type="button" onClick={() => navigator.share?.({ title: "Play the next track with me on Selectorz", url }).catch(() => {})}
-              className="h-12 self-start rounded-full border-[1.5px] border-ink px-5 text-[15px] font-semibold">
-              Share…
-            </button>
-          )}
-          <p className="text-[14px] leading-[1.45] text-ink-2">Send it to one person. The first DJ who joins gets the spot. We don’t email people who aren’t on Selectorz yet.</p>
+          <ShareChips url={url} text="Play the next track with me on Selectorz:" />
+          <p className="text-[14px] leading-[1.45] text-ink-2">
+            {pending && !url ? "Save track 1 and your link is ready. " : ""}Send it to one person. The first DJ who joins gets the spot. We don’t email people who aren’t on Selectorz yet.
+          </p>
         </>
       ) : (
         <p className="text-[14px] leading-[1.45] text-ink-2">
           For safety we only show an invite link once. Lost it? Make a new one. The old link stops working.
         </p>
       )}
-      <span className="flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-4 text-[14px]">
-        <button type="button" disabled={busy} onClick={onRenew} className="link-hover font-semibold underline underline-offset-4 disabled:opacity-50">
-          Make a new link
-        </button>
-        {url && (
-          <button type="button" disabled={busy} onClick={onRevoke} className="link-hover font-semibold text-ink-2 underline underline-offset-4 disabled:opacity-50">
-            Turn off this link
-          </button>
-        )}
+      <span className="flex flex-col gap-2.5 border-t border-[#E2E2DE] pt-4">
+        <span className="flex justify-between"><span className="label-mono text-ink-3">THE CHAIN</span><span className="label-mono text-ink-3">{pending && !url ? 0 : entries.length} OF 6</span></span>
+        <span className="grid grid-cols-6 gap-1.5" aria-hidden>
+          {Array.from({ length: 6 }, (_, i) => {
+            const done = !(pending && !url) && entries[i];
+            const next = i === (pending && !url ? 0 : entries.length);
+            const role: Role = i % 2 ? "B" : "A";
+            return <span key={i} className={`h-2 rounded-full ${next ? "ping" : ""}`} style={{ background: done ? ROLE_COLOR[done.role] : next ? ROLE_COLOR[role] : "rgba(17,17,17,0.18)" }} />;
+          })}
+        </span>
       </span>
+      {!pending && (onRenew || onRevoke) && (
+        <span className="flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
+          {onRenew && (
+            <button type="button" disabled={busy} onClick={onRenew} className="link-hover font-semibold underline underline-offset-4 disabled:opacity-50">
+              Make a new link
+            </button>
+          )}
+          {url && onRevoke && (
+            <button type="button" disabled={busy} onClick={onRevoke} className="link-hover font-semibold text-ink-2 underline underline-offset-4 disabled:opacity-50">
+              Turn off this link
+            </button>
+          )}
+        </span>
+      )}
     </section>
   );
 }

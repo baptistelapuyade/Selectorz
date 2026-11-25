@@ -5,7 +5,7 @@ import { renewInvite, revokeInvite, startChain } from "@/app/(build)/chain/actio
 import { track as log } from "@/components/analytics";
 import { inviteUrl, ROLE_COLOR, type PageTrack } from "@/lib/chains";
 import { PROVIDER_LABEL } from "@/lib/profile";
-import { Bar, ChainHeader, Cta, InviteCard, PlayProvider, Progress, TrackPick, pickReady, type Pick } from "./ui";
+import { Bar, ChainHeader, Cta, InviteCard, PlayProvider, TrackPick, pickReady, type Pick } from "./ui";
 
 export const inviteKey = (chain: string) => `selectorz:invite:${chain}`;
 export function rememberInvite(chain: string, token: string | null) {
@@ -90,31 +90,17 @@ export function StartChain({ name, page }: { name: string; page: PageTrack[] }) 
             )}
             {error && <p key={error} role="alert" className="shake text-[13px] text-error-text">{error}</p>}
           </div>
-          <div className="flex flex-col gap-4 md:pt-[180px]">
-            {chain ? (
-              <>
-                <InviteCard url={token ? inviteUrl(origin, token) : null} onRenew={renew} onRevoke={revoke} busy={pending} />
-                <span className="flex justify-between px-1"><span className="label-mono text-ink-3">THE CHAIN</span><span className="label-mono text-ink-3">1 OF 6</span></span>
-                <Progress entries={[{ role: "A" }]} target={6} />
-              </>
-            ) : (
-              <section className="flex flex-col gap-3 rounded-[22px] border border-dashed border-chip-border p-6 text-ink-3 md:p-8">
-                <span className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-chip-border font-mono text-[12px]">2</span>
-                  <span className="text-[18px] font-semibold">Invite one DJ</span>
-                </span>
-                <span className="text-[15px] leading-[1.45]">Once track 1 is in, you get a link. Send it to one DJ. They answer with track 2.</span>
-              </section>
-            )}
+          <div className="flex flex-col gap-4 md:pt-[186px]">
+            <InviteCard url={token ? inviteUrl(origin, token) : null} onRenew={chain ? renew : undefined} onRevoke={chain ? revoke : undefined} busy={pending} pending={!chain} />
           </div>
         </div>
         {chain ? (
-          <Bar note={<><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.A }} />Track 1 is saved. Waiting for a DJ to join. The chain stays unlisted.</>}>
+          <Bar note={<><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: ROLE_COLOR.A }} />Track 1 is saved. Waiting for a DJ to join. The chain stays unlisted until you both decide to share it.</>}>
             <Cta href="/home">Done, go to my rounds</Cta>
           </Bar>
         ) : (
-          <Bar note="Next you get the invite link.">
-            <Cta onClick={go} disabled={!ready || pending}>{pending ? "Saving…" : "Save track 1"}</Cta>
+          <Bar note="Nothing is sent yet. Save track 1, then share your link.">
+            <Cta onClick={go} disabled={!ready || pending}>{pending ? "Saving…" : "Save track 1 and get the link"}</Cta>
           </Bar>
         )}
       </main>

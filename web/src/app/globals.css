@@ -176,3 +176,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .done .done-band, .done .done-sleeve, .done .done-disc, .done .done-text, .done .done-steps { animation: none !important; }
 }
+
+/* Muster: nächster Platz pulsiert (Board DeskChainStart3) */
+@keyframes ping-soft { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.ping { animation: ping-soft 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ping { animation: none; opacity: 1; } }

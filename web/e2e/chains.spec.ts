@@ -17,11 +17,14 @@ async function pickTrack(page: Page, n: number, url: string, comment = "") {
 async function startChain(page: Page, title = "Slow Sunday") {
   await page.goto("/chain/new");
   await expect(page.getByRole("heading", { name: /Pick track 1/ })).toBeVisible();
+  // Einladungskarte ist von Anfang an da (Board DeskChainStart3), Link erst nach dem Speichern
+  await expect(page.getByRole("heading", { name: "Who plays track 2?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy link" })).toBeDisabled();
   await pickTrack(page, 1, sc("halden", "ostkreuz-dub"), "To get us started.");
   await page.getByLabel(/Name this round/).fill(title);
   await page.getByRole("button", { name: "Save track 1" }).click();
   const link = page.getByLabel("Your invite link");
-  await expect(link).toBeVisible();
+  await expect(link).toHaveValue(/\/invite\//);
   return link.inputValue();
 }
 
