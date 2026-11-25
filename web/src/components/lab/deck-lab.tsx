@@ -154,7 +154,7 @@ export function DeckLab() {
   const putOn = (t: LabTrack) => {
     setSel(items.findIndex((i) => i.key === t.key));
     setNeedTap(false);
-    if (!consent[t.src]) { setAsk({ provider: t.src, key: t.key }); setLoadedKey(t.key); setState("idle"); return; }
+    if (!consent[t.src]) { yt.current?.pauseVideo(); setAsk({ provider: t.src, key: t.key }); setLoadedKey(t.key); setState("idle"); return; }
     setAsk(null);
     setTime(cueOf(t));
     if (t.key === loadedKey && t.src === "youtube") { yt.current?.seekTo(cueOf(t), true); yt.current?.playVideo(); return; }
@@ -165,7 +165,8 @@ export function DeckLab() {
 
   const select = (i: number) => {
     const it = items[i];
-    if (playing && !it.dj && consent[it.src]) putOn(it);
+    // Läuft etwas (oder ist Bandcamp offen, dessen Zustand wir nicht kennen), legt Blättern die neue Platte auf
+    if ((playing || (bc && !!consent.bandcamp)) && !it.dj) putOn(it);
     else setSel(i);
   };
 
@@ -185,7 +186,10 @@ export function DeckLab() {
 
   const seek = (to: number) => { yt.current?.seekTo(to, true); setTime(to); };
   const canSeek = !!loaded && !bc && !!consent.youtube && state !== "error";
-  const playLabel = !loaded || !consent[loaded.src] ? "Play the crate" : bc ? "Use the Bandcamp player below" : playing ? "Pause" : "Play";
+  const frontIsLoaded = !!loaded && !front.dj && front.key === loaded.key;
+  const playLabel = frontIsLoaded
+    ? !consent[loaded.src] ? "Play the crate" : bc ? "Use the Bandcamp player below" : playing ? "Pause" : "Play"
+    : playing ? "Pause" : front.dj || !loaded ? "Play the crate" : "Play";
   const discOut = !!loaded && !front.dj && front.key === loaded.key;
   const ytVisible = !!loaded && loaded.src === "youtube" && !!consent.youtube;
 
@@ -197,12 +201,12 @@ export function DeckLab() {
         <span className="label-mono text-ink-3 sm:hidden">Lab · Deck</span>
       </header>
 
-      <section className="px-[clamp(20px,4vw,56px)] pt-10 text-center">
+      <section className="relative z-10 px-[clamp(20px,4vw,56px)] pt-10 text-center">
         <p className="label-mono text-ink-3">DJ · Disco House · Ruff&apos;n House · Berlin</p>
         <h1 className="mx-auto mt-3 pb-[0.06em] text-[clamp(88px,12vw,170px)] font-extrabold leading-[0.95] tracking-[-0.06em]">{NAME}</h1>
       </section>
 
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-x-clip">
         <div className="relative h-[440px] [perspective:1800px]" role="group" aria-label="Crate">
           {items.map((it, i) => {
             const d = i - sel;
@@ -273,8 +277,8 @@ export function DeckLab() {
             );
           })}
         </div>
-        <button type="button" aria-label="Previous record" onClick={() => select(Math.max(0, sel - 1))} className="absolute left-[clamp(12px,3vw,40px)] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">‹</button>
-        <button type="button" aria-label="Next record" onClick={() => select(Math.min(items.length - 1, sel + 1))} className="absolute right-[clamp(12px,3vw,40px)] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">›</button>
+        <button type="button" aria-label="Previous record" onClick={() => select(Math.max(0, sel - 1))} className="absolute left-[max(12px,calc(50%-650px))] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">‹</button>
+        <button type="button" aria-label="Next record" onClick={() => select(Math.min(items.length - 1, sel + 1))} className="absolute right-[max(12px,calc(50%-650px))] top-[175px] z-[200] flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-field-border bg-day-ground">›</button>
       </div>
 
       <section className="flex flex-col items-center gap-3 px-[clamp(20px,4vw,56px)] pb-16 text-center">
@@ -320,7 +324,7 @@ export function DeckLab() {
           <>
             <div className="mt-1 flex items-center justify-center gap-[18px]">
               <button type="button" onClick={() => seek(seekTarget(time, -15, duration))} disabled={!canSeek} aria-label="Back 15 seconds" className="h-12 w-12 rounded-full border-[1.5px] border-ink font-mono text-[11px] disabled:opacity-35">−15</button>
-              <button type="button" onClick={togglePlay} disabled={bc && !!consent.bandcamp} aria-label={playLabel} className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-ink text-day-ground shadow-[var(--shadow-cta)] disabled:opacity-50">
+              <button type="button" onClick={togglePlay} disabled={frontIsLoaded && bc && !!consent.bandcamp} aria-label={playLabel} className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-ink text-day-ground shadow-[var(--shadow-cta)] disabled:opacity-50">
                 {playing ? (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" /><rect x="14" y="4" width="5" height="16" /></svg>
                 ) : (

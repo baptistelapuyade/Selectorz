@@ -126,3 +126,46 @@ test("reduzierte Bewegung: die Platte dreht sich nicht", async ({ page }) => {
   const anim = await page.getByTestId("disc-spin").evaluate((el) => getComputedStyle(el).animationName);
   expect(anim).toBe("none");
 });
+
+test("nach Bandcamp lässt sich wieder eine YouTube-Platte auflegen", async ({ page }) => {
+  await setup(page);
+  // zuerst YouTube erlauben und hören
+  await page.getByRole("button", { name: "Play the crate" }).click();
+  await page.getByRole("button", { name: "Allow and load the player" }).click();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  // zwei nach links zu Bandcamp: Bandcamp fragt nach Einwilligung und lädt
+  await page.getByRole("button", { name: "Previous record" }).click();
+  await page.getByRole("button", { name: "Previous record" }).click();
+  await page.getByRole("button", { name: "Allow and load the player" }).click();
+  await expect(page.locator('iframe[src^="https://bandcamp.com/EmbeddedPlayer/"]')).toBeVisible();
+  // weiterblättern: Bandcamp verschwindet, die nächste YouTube-Platte wird aufgelegt
+  await page.getByRole("button", { name: "Previous record" }).click();
+  await expect(page.locator('iframe[src^="https://bandcamp.com/EmbeddedPlayer/"]')).toHaveCount(0);
+  await expect(page.getByTestId("yt-frame")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+});
+
+test("Bandcamp geladen, andere Platte vorn: Play legt sie auf", async ({ page }) => {
+  await setup(page);
+  await page.getByRole("button", { name: "Previous record" }).click();
+  await page.getByRole("button", { name: "Play the crate" }).click();
+  await page.getByRole("button", { name: "Allow and load the player" }).click();
+  await expect(page.locator('iframe[src^="https://bandcamp.com/EmbeddedPlayer/"]')).toBeVisible();
+  // DJ-Hülle zurück in die Mitte, dann Play: rechte Nachbarin (YouTube) fragt nach Einwilligung
+  await page.getByRole("button", { name: "Next record" }).click();
+  const play = page.getByRole("button", { name: "Play the crate" });
+  await expect(play).toBeEnabled();
+  await play.click();
+  await expect(page.getByText(/This loads the YouTube player/)).toBeVisible();
+});
+
+test("Pfeile bleiben auf großen Bildschirmen direkt neben der Kiste", async ({ page }) => {
+  await page.setViewportSize({ width: 2560, height: 1300 });
+  await setup(page);
+  const center = 2560 / 2;
+  const prev = (await page.getByRole("button", { name: "Previous record" }).boundingBox())!;
+  const next = (await page.getByRole("button", { name: "Next record" }).boundingBox())!;
+  expect(center - (prev.x + prev.width)).toBeLessThan(720);
+  expect(next.x - center).toBeLessThan(720);
+  expect(center - (prev.x + prev.width)).toBeGreaterThan(560); // nicht über den Hüllen
+});
