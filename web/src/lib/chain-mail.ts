@@ -52,7 +52,7 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
     preview = last ? `${last.title}${last.artist ? ` by ${last.artist}` : ""}. Pick track ${next} of ${e.chain.target}.` : `Pick track ${next}.`;
     eyebrow = "TRACK CHAIN · YOUR TURN";
     head = [`${o} answered.`, `Track ${next} is yours.`];
-    lastLabel = `${o.toUpperCase()} ANSWERED`;
+    lastLabel = ""; // Board MailTurn2: die Überschrift sagt schon „… answered.“
     lastMeta = last ? [last.artist, last.comment && `“${last.comment}”`].filter(Boolean).join(" · ") : "";
     body = "Have a listen, then pick what you would play next.";
     cta = `Pick track ${next}`;
@@ -63,7 +63,7 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
     head.join(" "),
     "",
     `${title} · ${e.chain.count} of ${e.chain.target}`,
-    last ? `${lastLabel.charAt(0) + lastLabel.slice(1).toLowerCase()}: ${last.title}${lastMeta ? ` (${lastMeta})` : ""}` : "",
+    last ? `${lastLabel ? `${lastLabel.charAt(0) + lastLabel.slice(1).toLowerCase()}: ` : ""}${last.title}${lastMeta ? ` (${lastMeta})` : ""}` : "",
     "",
     body,
     "",
@@ -74,25 +74,34 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
     `Turn off chain emails: ${settings}`,
   ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
 
+  // Rolle je Position: A spielt 1, 3, 5; B spielt 2, 4, 6 (Farben wie ROLE_COLOR)
+  const color = (pos: number) => (pos % 2 ? "#8C93FF" : "#F0532A");
+  const lastColor = color(Math.max(1, e.chain.count));
+  const bars = Array.from({ length: e.chain.target }, (_, i) => {
+    const pos = i + 1;
+    const style = pos <= e.chain.count ? `background:${color(pos)}` : pos === e.chain.count + 1 && e.kind !== "completed" ? "border:1.5px dashed #EDEDEA" : "background:#2A2A2E";
+    return `<td data-bar="${pos}" style="padding:0 ${i === e.chain.target - 1 ? 0 : 4}px 0 0"><div style="height:8px;box-sizing:border-box;border-radius:999px;${style}"></div></td>`;
+  }).join("");
   const mono = "font-family:'Geist Mono',Menlo,Consolas,monospace;font-size:11px;letter-spacing:0.12em;color:#57575A";
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc(subject)}</title></head>
 <body style="margin:0;background:#EDEDEA;color:#111111;font-family:'Inter Tight',Helvetica,Arial,sans-serif">
 <span style="display:none;max-height:0;overflow:hidden">${esc(preview)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EDEDEA"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border-radius:14px">
-<tr><td style="padding:28px 28px 0"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">Selectorz</span></td></tr>
-<tr><td style="padding:24px 28px 0;${mono}">${esc(eyebrow)}</td></tr>
-<tr><td style="padding:10px 28px 0;font-size:34px;line-height:1;font-weight:800;letter-spacing:-0.045em">${esc(head[0])}<br>${esc(head[1])}</td></tr>
-<tr><td style="padding:24px 28px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111111;border-radius:12px;color:#EDEDEA">
-<tr><td style="padding:18px 20px 0;${mono};color:#A6A6AC">${esc(title.toUpperCase())} · ${e.chain.count} OF ${e.chain.target}</td></tr>
-${last ? `<tr><td style="padding:14px 20px 0;${mono};color:#A6A6AC">${esc(lastLabel)}</td></tr>
-<tr><td style="padding:4px 20px 0;font-size:22px;font-weight:800;letter-spacing:-0.03em">${esc(last.title)}</td></tr>
-<tr><td style="padding:4px 20px 18px;font-size:14px;color:#C9C9C4">${esc(lastMeta)}</td></tr>` : `<tr><td style="padding:0 0 18px"></td></tr>`}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EDEDEA"><tr><td align="center" style="padding:28px 12px 0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+<tr><td style="padding:4px 8px 0"><span style="font-size:16px;font-weight:800;letter-spacing:-0.03em">Selectorz</span></td></tr>
+<tr><td style="padding:18px 8px 0;${mono};font-size:10px">${esc(eyebrow)}</td></tr>
+<tr><td style="padding:12px 8px 0;font-size:40px;line-height:0.92;font-weight:800;letter-spacing:-0.05em">${esc(head[0])}<br>${esc(head[1])}</td></tr>
+<tr><td style="padding:18px 8px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111111;border-radius:10px;color:#EDEDEA">
+<tr><td style="padding:16px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="${mono};font-size:10px;letter-spacing:0.1em;color:#A6A6AC">${esc(title.toUpperCase())}</td><td align="right" style="${mono};font-size:10px;letter-spacing:0.1em;color:#A6A6AC;white-space:nowrap">${e.chain.count} OF ${e.chain.target}</td></tr></table></td></tr>
+<tr><td style="padding:14px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed"><tr>${bars}</tr></table></td></tr>
+${last ? `${lastLabel ? `<tr><td style="padding:14px 16px 0;${mono};font-size:10px;letter-spacing:0.1em;color:${lastColor}">${esc(lastLabel)}</td></tr>` : ""}
+<tr><td style="padding:${lastLabel ? 4 : 14}px 16px 0;font-size:26px;line-height:0.95;font-weight:800;letter-spacing:-0.035em">${esc(last.title)}</td></tr>
+<tr><td style="padding:4px 16px 16px;font-size:13px;color:#C4C4C8">${esc(lastMeta)}</td></tr>` : `<tr><td style="padding:0 0 16px"></td></tr>`}
 </table></td></tr>
-<tr><td style="padding:20px 28px 0;font-size:16px;line-height:1.45">${esc(body)}</td></tr>
-<tr><td style="padding:22px 28px 28px"><a href="${esc(url)}" style="display:inline-block;background:#111111;color:#EDEDEA;text-decoration:none;font-size:16px;font-weight:600;padding:16px 26px;border-radius:999px">${esc(cta)} &rarr;</a></td></tr>
+<tr><td style="padding:18px 8px 0;font-size:15px;line-height:1.5">${esc(body)}</td></tr>
+<tr><td style="padding:18px 8px 0"><a href="${esc(url)}" style="display:block;background:#111111;color:#EDEDEA;text-decoration:none;font-size:16px;font-weight:600;line-height:54px;padding:0 22px;border-radius:999px">${esc(cta)}<span style="float:right">&rarr;</span></a></td></tr>
+<tr><td style="padding:32px 8px 0"><div style="border-top:1px solid #D2D2CE;padding:18px 0 26px;font-size:12px;line-height:1.5;color:#57575A">${esc(why)} <a href="${esc(settings)}" style="color:#57575A">Turn off chain emails</a></div></td></tr>
 </table>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px"><tr><td style="padding:16px 8px;font-size:12px;line-height:1.5;color:#57575A">${esc(why)} <a href="${esc(settings)}" style="color:#57575A">Turn off chain emails</a></td></tr></table>
 </td></tr></table></body></html>`;
 
   return { subject, text, html, headers: { "List-Unsubscribe": `<${settings}>` } };

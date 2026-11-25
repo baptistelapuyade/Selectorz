@@ -34,4 +34,22 @@ describe("Ketten-Mails", () => {
     expect(m.html).not.toContain("<script>x");
     expect(m.html + m.text).not.toContain("a@example.com");
   });
+  it("Wie Board MailTurn: Titel links, Stand rechts, Fortschrittsbalken, Label in der Farbe der anderen Person", () => {
+    const m = chainMail(ev({}), site);
+    expect(m.html).toContain(">SLOW SUNDAY<");
+    expect(m.html).toContain(">2 OF 6<");
+    expect(m.html.match(/data-bar=/g)).toHaveLength(6);
+    // Board MailTurn2: kein „KOFI ANSWERED“ mehr in der Karte, die Überschrift sagt es schon
+    expect(m.html).not.toContain("KOFI ANSWERED");
+    expect(m.html).toContain("Kofi answered.");
+    expect(chainMail(ev({ kind: "reminder" }), site).html).toContain("color:#F0532A\">LAST TRACK");
+    expect(m.html).toContain("Teodora · “Kept the dub, added a little shine.”");
+  });
+  it("DJ-Namen: „Dj Hardcore googoo gaga“ heißt in der Mail „Dj Hardcore“, nicht „Dj“ (PO-Feedback 25.11.)", () => {
+    const m = chainMail(ev({ other: { name: "Dj Hardcore googoo gaga" }, chain: { id: "c1", title: "", target: 6, count: 2 } }), site);
+    expect(m.subject).toBe("Your turn: Dj Hardcore answered");
+    expect(m.text).toContain("Dj Hardcore answered.");
+    expect(m.html).toContain("Dj Hardcore answered.");
+    expect(m.html).toContain("DJ HARDCORE AND YOU");
+  });
 });
