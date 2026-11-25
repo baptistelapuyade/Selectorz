@@ -52,7 +52,7 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
     preview = last ? `${last.title}${last.artist ? ` by ${last.artist}` : ""}. Pick track ${next} of ${e.chain.target}.` : `Pick track ${next}.`;
     eyebrow = "TRACK CHAIN · YOUR TURN";
     head = [`${o} answered.`, `Track ${next} is yours.`];
-    lastLabel = `${o.toUpperCase()} ANSWERED`;
+    lastLabel = ""; // Board MailTurn2: die Überschrift sagt schon „… answered.“
     lastMeta = last ? [last.artist, last.comment && `“${last.comment}”`].filter(Boolean).join(" · ") : "";
     body = "Have a listen, then pick what you would play next.";
     cta = `Pick track ${next}`;
@@ -63,7 +63,7 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
     head.join(" "),
     "",
     `${title} · ${e.chain.count} of ${e.chain.target}`,
-    last ? `${lastLabel.charAt(0) + lastLabel.slice(1).toLowerCase()}: ${last.title}${lastMeta ? ` (${lastMeta})` : ""}` : "",
+    last ? `${lastLabel ? `${lastLabel.charAt(0) + lastLabel.slice(1).toLowerCase()}: ` : ""}${last.title}${lastMeta ? ` (${lastMeta})` : ""}` : "",
     "",
     body,
     "",
@@ -94,8 +94,8 @@ export function chainMail(e: MailEvent, site: string, now = new Date()) {
 <tr><td style="padding:18px 8px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#111111;border-radius:10px;color:#EDEDEA">
 <tr><td style="padding:16px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="${mono};font-size:10px;letter-spacing:0.1em;color:#A6A6AC">${esc(title.toUpperCase())}</td><td align="right" style="${mono};font-size:10px;letter-spacing:0.1em;color:#A6A6AC;white-space:nowrap">${e.chain.count} OF ${e.chain.target}</td></tr></table></td></tr>
 <tr><td style="padding:14px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed"><tr>${bars}</tr></table></td></tr>
-${last ? `<tr><td style="padding:14px 16px 0;${mono};font-size:10px;letter-spacing:0.1em;color:${lastColor}">${esc(lastLabel)}</td></tr>
-<tr><td style="padding:4px 16px 0;font-size:26px;line-height:0.95;font-weight:800;letter-spacing:-0.035em">${esc(last.title)}</td></tr>
+${last ? `${lastLabel ? `<tr><td style="padding:14px 16px 0;${mono};font-size:10px;letter-spacing:0.1em;color:${lastColor}">${esc(lastLabel)}</td></tr>` : ""}
+<tr><td style="padding:${lastLabel ? 4 : 14}px 16px 0;font-size:26px;line-height:0.95;font-weight:800;letter-spacing:-0.035em">${esc(last.title)}</td></tr>
 <tr><td style="padding:4px 16px 16px;font-size:13px;color:#C4C4C8">${esc(lastMeta)}</td></tr>` : `<tr><td style="padding:0 0 16px"></td></tr>`}
 </table></td></tr>
 <tr><td style="padding:18px 8px 0;font-size:15px;line-height:1.5">${esc(body)}</td></tr>
