@@ -85,3 +85,6 @@ export async function completedChain(a: string, b: string, title = "Slow Sunday"
   for (let n = 3; n <= 6; n++) await asUser(n % 2 ? a : b, (q) => q("select * from public.add_track($1, $2, $3, $4, $5, '', gen_random_uuid())", [chain_id, n, ...t(n)]));
   return chain_id as string;
 }
+
+// Überschrift „Dein Zug“: Desktop „Your turn. Track 3 of 6.“, mobil „Pick track 3“ (Boards DeskChainYourTurn3, ChainYourTurn2)
+export const turnHeading = (n: number) => new RegExp(`^(Your turn\\. Track ${n} of 6\\.|Pick track ${n})$`);

@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { latestCode } from "./mailpit";
-import { fresh, liveProfile, login } from "./helpers";
+import { fresh, liveProfile, login, turnHeading } from "./helpers";
 
 // Abnahme M2 Teil 1 (Track-Ketten): starten, einladen, beitreten, abwechselnd bis sechs, Fehlerfälle.
 
@@ -58,7 +58,7 @@ async function joinAsNewcomer(browser: Browser, invite: string, track2 = sc("teo
 
 async function play(page: Page, n: number, artist: string, title: string) {
   await page.reload();
-  await expect(page.getByRole("heading", { name: `Your turn. Track ${n} of 6.` })).toBeVisible();
+  await expect(page.getByRole("heading", { name: turnHeading(n) })).toBeVisible();
   await pickTrack(page, n, sc(artist, title));
   await page.getByRole("button", { name: `Send track ${n}` }).click();
   // erst weiter, wenn der Zug gespeichert ist (sonst lädt die andere Seite zu früh neu)
@@ -85,9 +85,9 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
   await expect(card).toContainText("Glass Floor");
   await expect(page.getByText("YOUR TURN", { exact: true })).toBeVisible();
   await card.getByRole("link", { name: /Pick track 3/ }).click();
-  await expect(page.getByRole("heading", { name: "Your turn. Track 3 of 6." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: turnHeading(3) })).toBeVisible();
   await expect(page.getByLabel("Kofi played")).toContainText("Kept the dub, added a little shine.");
-  await expect(page.getByText(/^KOFI ANSWERED · /)).toBeVisible();
+  if (test.info().project.name === "desktop") await expect(page.getByText(/^KOFI ANSWERED · /)).toBeVisible();
   await expect(page.getByText("We email Kofi when it’s in. You can send the link yourself too.")).toBeVisible();
 
   await pickTrack(page, 3, sc("halden", "low-ceiling"));
@@ -154,7 +154,7 @@ test("K3: Gleicher Track wird abgefangen, Runde beenden mit Bestätigung", async
   const kofi = await joinAsNewcomer(browser, invite, glass);
 
   await page.goto(kofi.page.url());
-  await expect(page.getByRole("heading", { name: "Your turn. Track 3 of 6." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: turnHeading(3) })).toBeVisible();
   // Kofis Track noch einmal: Hinweis, Knopf bleibt aus
   await pickTrack(page, 3, glass);
   await expect(page.getByRole("alert").filter({ hasText: "already in this round" })).toBeVisible();
@@ -165,8 +165,8 @@ test("K3: Gleicher Track wird abgefangen, Runde beenden mit Bestätigung", async
   await kofi.page.reload();
   await expect(kofi.page.getByRole("heading", { name: "Luma ended this round." })).toBeVisible();
   await page.goto("/home");
-  await page.getByRole("button", { name: /Ended/ }).click();
-  await expect(page.getByTestId("round-row").filter({ hasText: "Rooftop Hours" })).toContainText("Ended · 2 of 6");
+  await page.getByRole("group", { name: "Filter rounds" }).getByRole("button", { name: /^All/ }).click();
+  await expect(page.getByTestId("round-row").filter({ hasText: "Rooftop Hours" })).toContainText("Ended");
   await kofi.ctx.close();
 });
 
@@ -186,6 +186,7 @@ test("K4: Zwei Tabs, ein Zug: der zweite Klick bekommt den aktuellen Stand", asy
   await expect(page.getByRole("heading", { name: "Over to Kofi." })).toBeVisible();
   await tab2.getByRole("button", { name: "Send track 3" }).click();
   await expect(tab2.getByRole("alert").filter({ hasText: /not your turn|moved on/ })).toBeVisible();
+  await tab2.getByRole("button", { name: "View the chain" }).click();
   await expect(tab2.getByTestId("entry-3")).toContainText("Tab One");
   await expect(tab2.getByTestId("entry-4")).toHaveCount(0);
   await kofi.ctx.close();

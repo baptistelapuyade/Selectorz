@@ -136,7 +136,7 @@ export function ChainRoom({ initial, page, handle = null, notify = true }: { ini
       <PlayProvider>
         <main className="flex flex-1 flex-col">
           <ChainHeader a={names.A || "You"} b={names.B || null} right={title.toUpperCase()} />
-          <Handoff c={c} names={names} title={title} here={here} sent={sent} handle={handle} notify={notify} endButton={endButton} />
+          <Handoff c={c} names={names} title={title} here={here} sent={sent} handle={handle} notify={notify} endButton={endButton} error={error} />
         </main>
       </PlayProvider>
     );

@@ -7,9 +7,9 @@ import { copyText } from "@/lib/copy";
 import { ChainList, Cta, ShareChips } from "./ui";
 
 // Übergabe nach dem eigenen Zug (Boards DeskChainHandoff3, ChainHandoff2)
-export function Handoff({ c, names, title, here, sent, handle, notify, endButton }: {
+export function Handoff({ c, names, title, here, sent, handle, notify, endButton, error }: {
   c: Chain; names: Record<Role, string>; title: string; here: string | null; sent: boolean;
-  handle: string | null; notify: boolean; endButton: React.ReactNode;
+  handle: string | null; notify: boolean; endButton: React.ReactNode; error?: string | null;
 }) {
   const other: Role = c.my_role === "A" ? "B" : "A";
   const name = firstName(names[other] || "your partner");
@@ -32,6 +32,7 @@ export function Handoff({ c, names, title, here, sent, handle, notify, endButton
           <p className="mx-4 mt-2.5 max-w-[560px] text-[15px] leading-[1.45] text-ink-2 md:mx-0 md:mt-0 md:text-[18px]">
             {last ? `${last.title} is in. ` : ""}{name} picks track {next} next.
           </p>
+          {error && <p key={error} role="alert" className="shake mx-4 mt-3 text-[14px] text-error-text md:mx-0 md:mt-0">{error}</p>}
           <div className="mt-auto hidden pt-6 md:block">
             <DotChain c={c} names={names} next={next} other={other} />
           </div>

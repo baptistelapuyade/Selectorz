@@ -187,7 +187,7 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
           <section className="mt-6 flex flex-col gap-4 [--avatar-ring:var(--color-bg)] md:mt-0 md:gap-3.5 md:rounded-[14px] md:border md:border-line md:bg-surface md:p-[18px] md:[--avatar-ring:#fff]" aria-labelledby="pub-title">
             <span className="flex items-baseline justify-between border-t-2 border-ink pt-3 md:hidden">
               <span className="text-[22px] font-semibold tracking-[-0.02em]">{c.public ? "It’s public." : "Show it publicly?"}</span>
-              <span className="label-mono text-ink-3">{yes} OF 2 SAID YES</span>
+              <span className="label-mono text-ink-3" aria-label={`${yes} of 2 said yes`}>{yes} OF 2 SAID YES</span>
             </span>
             <span className="flex items-center gap-3 md:gap-3.5">
               {avatars}

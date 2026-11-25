@@ -35,7 +35,7 @@ test("F1: Abschluss, erst beide Freigaben machen die Selection öffentlich, Wide
   await shot(page, "1-abschluss");
   await page.getByRole("button", { name: "Approve and make a story" }).click();
   await expect(page.locator("#pub-title")).toHaveText("Waiting for Kofi’s yes.");
-  await expect(page.getByLabel("1 of 2 said yes")).toBeVisible();
+  await expect(page.getByLabel("1 of 2 said yes").filter({ visible: true })).toBeVisible();
 
   // Mit nur einer Freigabe: nichts öffentlich
   await visitor.goto(`/s/${chain}`);

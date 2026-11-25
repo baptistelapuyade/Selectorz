@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asUser, fresh, liveProfileUser, login, userId } from "./helpers";
+import { asUser, fresh, liveProfileUser, login, turnHeading, userId } from "./helpers";
 import { mailsTo, waitForMail } from "./mailpit";
 
 // Abnahme M2 Teil 2b: Ketten-Mails. Mails landen in CI in Mailpit (MAIL_TRANSPORT=mailpit).
@@ -44,7 +44,7 @@ test("N1: Zug-Mail nach jedem Zug, Button führt zur Kette, Doppelklick = eine M
   const link = m.text.match(/Pick track 3: (\S+)/)![1];
   expect(link).toMatch(new RegExp(`/chain/${chain_id}$`));
   await page.goto(new URL(link).pathname);
-  await expect(page.getByRole("heading", { name: "Your turn. Track 3 of 6." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: turnHeading(3) })).toBeVisible();
   await page.screenshot({ path: `test-results/abnahme/${info.project.name}-mail-2-kette-aus-mail.png` });
   // Die Mail selbst als Screenshot für die Abnahme
   const view = await kofiCtx.newPage();
