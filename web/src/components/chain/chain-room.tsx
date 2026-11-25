@@ -202,7 +202,7 @@ export function ChainRoom({ initial, page }: { initial: Chain; page: PageTrack[]
     <PlayProvider>
       <main className="flex flex-1 flex-col">
         <ChainHeader a={names.A || "You"} b={names.B || null} right={right} />
-        <div className="grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-16 md:px-20 md:py-12">
+        <div className="mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,560px)] md:gap-16 md:px-20 md:py-12">
           <div className="flex min-w-0 flex-col gap-5">
             {body}
             {error && <p key={error} role="alert" className="shake text-[14px] text-error-text">{error}</p>}

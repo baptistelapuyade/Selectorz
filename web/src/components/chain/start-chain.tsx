@@ -61,7 +61,7 @@ export function StartChain({ name, page }: { name: string; page: PageTrack[] }) 
     <PlayProvider>
       <main className="flex flex-1 flex-col">
         <ChainHeader a={name} b={null} right={`TRACK 1 OF 6`} />
-        <div className="grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,600px)] md:gap-[72px] md:px-20 md:py-12">
+        <div className="mx-auto w-full max-w-[1440px] grid flex-1 gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,600px)] md:gap-[72px] md:px-20 md:py-12">
           <div className="flex flex-col gap-6">
             <span className="label-mono text-ink-3">START A CHAIN{title ? ` · ${title.toUpperCase()}` : ""}</span>
             <h1 className="text-[52px] font-extrabold leading-[0.88] tracking-[-0.06em] md:text-[84px]">Pick track 1.<br />Send the link.</h1>

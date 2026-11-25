@@ -32,6 +32,7 @@ test("N1: Zug-Mail nach jedem Zug, Button führt zur Kette, Doppelklick = eine M
   const kofiId = await userId(kofiMail);
   await asUser(kofiId, (q) => q("update public.accounts set display_name = 'Kofi Mensah' where id = $1", [kofiId]));
   await kofi.goto(`/invite/${invite_token}`);
+  await kofi.getByRole("button", { name: "Pick your track 2" }).click();
   await pick(kofi, 2, "glass-floor");
   await kofi.getByRole("button", { name: "Send track 2" }).click();
   await expect(kofi.getByRole("heading", { name: "Over to Luma." })).toBeVisible();
