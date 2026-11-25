@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { TrackInput, WorksWith } from "@/components/build/track-input";
 import { track as log } from "@/components/analytics";
 import { firstName, ROLE_COLOR, urlKey as urlKeyOf, type Entry, type PageTrack, type Role } from "@/lib/chains";
@@ -71,6 +71,8 @@ export const Num = ({ n, role, open, color }: { n: number; role?: Role; open?: b
 const Play = createContext<{ on: string | null; set: (id: string | null) => void }>({ on: null, set: () => {} });
 export function PlayProvider({ children }: { children: React.ReactNode }) {
   const [on, set] = useState<string | null>(null);
+  // Next 16 versteckt verlassene Seiten nur (Activity), statt sie abzubauen: Player beim Verstecken stoppen
+  useLayoutEffect(() => () => set(null), []);
   return <Play.Provider value={{ on, set }}>{children}</Play.Provider>;
 }
 export function usePlay(id: string, url: string) {

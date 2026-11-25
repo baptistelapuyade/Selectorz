@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { embedSrc, providerOf, PROVIDER_LABEL } from "@/lib/profile";
 import { track } from "@/components/analytics";
 
@@ -9,6 +9,8 @@ const Ctx = createContext<{ active: string | null; setActive: (id: string | null
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState<string | null>(null);
+  // Next 16 versteckt verlassene Seiten nur (Activity), statt sie abzubauen: Player beim Verstecken stoppen
+  useLayoutEffect(() => () => setActive(null), []);
   return <Ctx.Provider value={{ active, setActive }}>{children}</Ctx.Provider>;
 }
 
