@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { RoundStats, Rounds } from "@/components/home/rounds";
+import { RefreshOnReturn } from "@/components/home/refresh-on-return";
 import { ShareStory } from "@/components/home/share-story";
 import type { Round } from "@/lib/chains";
 import { fromServer, type EditState } from "@/lib/edit/model";
@@ -170,6 +171,7 @@ function NoRounds() {
 export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col">
+      <RefreshOnReturn />
       <header className="border-b border-line">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-4 px-4 md:h-[72px] md:gap-7 md:px-10">
         <Link href="/" className="text-[18px] font-extrabold tracking-[-0.03em] md:text-[26px] md:tracking-[-0.045em]">Selectorz</Link>
