@@ -21,7 +21,7 @@ export function Record({ id, title, people, tracks, className = "" }: { id: stri
           style={{ background: col.white ? "#F4F4F1" : `linear-gradient(90deg, ${col.A} 50%, ${col.B} 50%)` }}>
           {col.white ? <span className="font-mono text-[6px] tracking-[0.12em] md:text-[7px]">WHITE LABEL</span>
             : <span className="hidden font-mono text-[7px] tracking-[0.12em] md:block">SELECTORZ · {tracks} TRACKS</span>}
-          <span className="line-clamp-2 px-[12%] text-[13px] font-extrabold leading-[0.9] tracking-[-0.03em] md:text-[20px] md:tracking-[-0.04em]">{title}</span>
+          <span className="line-clamp-2 px-[12%] pb-[0.12em] text-[13px] font-extrabold leading-[0.9] tracking-[-0.03em] md:text-[20px] md:tracking-[-0.04em]">{title}</span>
           <span aria-hidden className="h-[5px] w-[5px] rounded-full bg-night-bg md:h-[9px] md:w-[9px]" />
           <span className="font-mono text-[6px] tracking-[0.12em] md:text-[7px]">{pair.toUpperCase()}</span>
           {col.white && <span className="mt-0.5 -rotate-6 border border-ink px-1 font-mono text-[6px] tracking-[0.1em] md:text-[7px]">{stampFor(id)}</span>}
@@ -38,7 +38,7 @@ export function Record({ id, title, people, tracks, className = "" }: { id: stri
           <span className="truncate text-right">{(b?.name ?? "").toUpperCase()}</span>
         </span>
         {col.white && <span className="absolute right-3 top-10 -rotate-6 border-2 border-ink px-2 py-0.5 font-mono text-[11px] tracking-[0.12em] md:right-[18px] md:top-12">{stampFor(id)}</span>}
-        <span className="absolute bottom-3 left-3 right-3 line-clamp-3 text-[44px] font-extrabold leading-[0.84] tracking-[-0.06em] [overflow-wrap:anywhere] md:bottom-[18px] md:left-[18px] md:right-[18px] md:text-[68px]">{title}</span>
+        <span className="absolute bottom-3 left-3 right-3 line-clamp-3 pb-[0.14em] text-[44px] font-extrabold leading-[0.84] tracking-[-0.06em] [overflow-wrap:anywhere] md:bottom-[14px] md:left-[18px] md:right-[18px] md:text-[68px]">{title}</span>
       </figure>
     </div>
   );
