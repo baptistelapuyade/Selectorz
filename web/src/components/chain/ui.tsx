@@ -116,7 +116,7 @@ export function PlayFrame({ id, url, title }: { id: string; url: string; title: 
 
 // Der zuletzt gespielte Track der anderen Person, groß und spielbar (Board „Your turn“)
 export function LastPlayed({ e, who }: { e: Entry; who: string }) {
-  const id = `e${e.position}`;
+  const id = `last-e${e.position}`; // eigene ID: dieselbe Position in der Kette rechts ist ein anderer Player
   return (
     <section className="order-first mt-1 rounded-[12px] bg-night-bg px-3.5 py-3 text-night-t1 md:order-none md:mt-0 md:rounded-[18px] md:px-[60px] md:py-6" aria-label={`${who} played`}>
       <div className="relative flex items-center gap-3 md:gap-4">
