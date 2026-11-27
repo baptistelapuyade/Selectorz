@@ -25,6 +25,8 @@ const ERRORS: Record<string, string> = {
   own_invite: "That's your own invite. Send it to the DJ you want to play with.",
   blocked: "You can't join this round.",
   chain_not_completed: "This round isn't complete yet.",
+  empty_title: "Give it a name first.",
+  no_suggestion: "There is no name to agree on yet.",
 };
 
 function fail(message: string | undefined): Fail {
@@ -153,12 +155,20 @@ export async function setApproval(id: string, yes: boolean): Promise<Ok<{ chain:
   return r;
 }
 
-// Name der Runde (DeskChainComplete3 „Name it“): beide Beteiligten dürfen umbenennen
-export async function renameChain(id: string, title: string): Promise<Ok<{ chain: Chain }> | Fail> {
+// Name gemeinsam (Boards „Abschluss · Name A–E“): vorschlagen, die andere Person stimmt zu
+export async function suggestTitle(id: string, title: string): Promise<Ok<{ chain: Chain }> | Fail> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("rename_chain", { p_chain: id, p_title: String(title ?? "").slice(0, 200) });
+  const { error } = await supabase.rpc("suggest_chain_title", { p_chain: id, p_title: String(title ?? "").slice(0, 200) });
+  if (error) return fail(error.message);
+  return getChain(id);
+}
+
+export async function acceptTitle(id: string): Promise<Ok<{ chain: Chain }> | Fail> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("accept_chain_title", { p_chain: id });
   if (error) return fail(error.message);
   const r = await getChain(id);
+  // gültiger Name ändert sich: Profile mit dieser Selection neu laden
   if (r.ok && r.chain.public) for (const p of r.chain.participants) if (p.handle) updateTag(`profile:${p.handle}`);
   return r;
 }

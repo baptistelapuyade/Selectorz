@@ -109,3 +109,60 @@ test("F2: Fremde sehen die Kette nicht, die Seite einer unfertigen Kette gibt ni
   expect(await v.content()).not.toContain("Secret Title");
   await anon.close();
 });
+
+test("F3: Name gemeinsam: Vorschlag gilt erst nach Zustimmung, öffentliche Selection zeigt den neuen Namen (PO 27.11.)", async ({ page, browser }, info) => {
+  test.setTimeout(150_000);
+  const luma = await liveProfileUser(page, "Luma Reyes");
+  const kofiCtx = await browser.newContext(ctx(info));
+  const kofi = await kofiCtx.newPage();
+  const kofiMail = fresh("kofi");
+  await login(kofi, kofiMail);
+  const kofiId = await userId(kofiMail);
+  await asUser(kofiId, (q) => q("update public.accounts set display_name = 'Kofi Mensah' where id = $1", [kofiId]));
+  const chain = await completedChain(luma.uid, kofiId);
+  const name = (p: Page) => p.getByTestId("name-it").filter({ visible: true });
+  const sleeve = (p: Page, t: string) => p.getByRole("img", { name: `${t}, a selection by Luma × Kofi` });
+
+  // Beide geben frei, damit die öffentliche Seite den Namen zeigt
+  await page.goto(`/chain/${chain}`);
+  await page.getByRole("button", { name: "Approve and make a story" }).click();
+  await expect(page.locator("#pub-title")).toHaveText("Waiting for Kofi’s yes.");
+  await kofi.goto(`/chain/${chain}`);
+  await kofi.getByRole("button", { name: "Approve and make a story" }).click();
+  await expect(kofi.getByRole("dialog")).toBeVisible();
+  await kofi.keyboard.press("Escape");
+
+  // Startname ist Lumas Vorschlag: Luma wartet, Kofi sieht „Luma suggests“
+  await page.reload();
+  await expect(name(page)).toHaveAttribute("data-state", "B");
+  await expect(name(kofi)).toHaveAttribute("data-state", "A");
+  await expect(name(kofi)).toContainText("Luma suggests");
+
+  // Luma schlägt etwas Neues vor: gültig bleibt „Slow Sunday“
+  await name(page).getByRole("button", { name: "Change" }).click();
+  await name(page).getByRole("textbox").fill("Sunday Glow");
+  await name(page).getByRole("button", { name: "Suggest" }).click();
+  await expect(name(page)).toHaveAttribute("data-state", "B");
+  await expect(name(page)).toContainText("Sunday Glow");
+  await expect(sleeve(page, "Slow Sunday")).toBeVisible();
+
+  // Kofi stimmt zu: beide sehen „Named together“, Hülle und öffentliche Seite den neuen Namen
+  await kofi.reload();
+  await expect(name(kofi)).toHaveAttribute("data-state", "A");
+  await expect(name(kofi)).toContainText("Sunday Glow");
+  await name(kofi).getByRole("button", { name: "Sounds good" }).click();
+  await expect(name(kofi)).toHaveAttribute("data-state", "C");
+  await expect(sleeve(kofi, "Sunday Glow")).toBeVisible();
+  await page.reload();
+  await expect(name(page)).toHaveAttribute("data-state", "C");
+  await expect(name(page)).toContainText("Named together");
+  const anon = await browser.newContext(ctx(info));
+  const visitor = await anon.newPage();
+  await visitor.goto(`/s/${chain}`);
+  await expect(visitor.getByRole("heading", { name: "Sunday Glow", level: 1 })).toBeVisible();
+  await visitor.goto(`/${luma.handle}`);
+  await expect(visitor.getByTestId("profile-selection")).toContainText("Sunday Glow");
+  await shot(kofi, "name-together");
+  await anon.close();
+  await kofiCtx.close();
+});
