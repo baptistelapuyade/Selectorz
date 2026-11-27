@@ -89,6 +89,15 @@ test("K1: Kette von Track 1 bis 6 zwischen zwei DJs, Home zeigt Zug und Abschlus
   await expect(page.getByLabel("Kofi played")).toContainText("Kept the dub, added a little shine.");
   if (test.info().project.name === "desktop") await expect(page.getByText(/^KOFI ANSWERED · /)).toBeVisible();
   await expect(page.getByText("We email Kofi when it’s in. You can send the link yourself too.")).toBeVisible();
+  // Ein Player zur Zeit (PO-Feedback 27.11.): Track 2 in der Kette öffnet den Player nur dort, nicht auch links
+  if (test.info().project.name === "desktop") {
+    await page.getByTestId("entry-2").getByRole("button", { name: /^Play / }).click();
+    await expect(page.locator("iframe")).toHaveCount(1);
+    await expect(page.getByTestId("entry-2").locator("iframe")).toHaveCount(1);
+    await page.getByLabel("Kofi played").getByRole("button", { name: /^(Play|Pause) / }).click();
+    await expect(page.locator("iframe")).toHaveCount(1);
+    await expect(page.getByLabel("Kofi played").locator("iframe")).toHaveCount(1);
+  }
 
   await pickTrack(page, 3, sc("halden", "low-ceiling"));
   await page.getByRole("button", { name: "Send track 3" }).click();
