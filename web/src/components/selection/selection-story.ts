@@ -2,7 +2,7 @@
 
 import { firstName, type Role } from "@/lib/chains";
 import { palette, stampFor, type SelEntry, type SelPerson } from "@/lib/selection";
-import { SAFE, SITE, STORY_H, STORY_W, fitName } from "@/lib/story";
+import { SAFE, SITE, STORY_H, STORY_W, fitName, wrapLines } from "@/lib/story";
 
 // Selection-Story (SHARE-07/09/10): Boards StorySelBands3, StorySelPoster3, StorySelFlyer3 in 3-facher Größe
 // (360 × 640 → 1080 × 1920). Gleiche Akzentfarbe: White label mit Stempel, A gefüllte Nummer, B Ring.
@@ -31,6 +31,11 @@ function fit(x: Ctx, text: string, width: number) {
   let t = text;
   while (t.length > 1 && x.measureText(`${t}…`).width > width) t = t.slice(0, -1);
   return `${t.trimEnd()}…`;
+}
+
+// Grundlinie, damit Großbuchstaben in der aktuellen Schrift optisch mittig auf cy sitzen
+function capMiddle(x: Ctx, cy: number) {
+  return cy + x.measureText("H").actualBoundingBoxAscent / 2;
 }
 
 function arrow(x: Ctx, cx: number, cy: number, color: string, down = false) {
@@ -98,7 +103,8 @@ function num(x: Ctx, n: number, role: Role, cx: number, cy: number, mono: string
   const label = String(n).padStart(2, "0");
   x.font = `600 30px ${mono}`;
   x.textAlign = "center";
-  x.textBaseline = "middle";
+  x.textBaseline = "alphabetic";
+  const base = capMiddle(x, cy);
   if (white) {
     x.beginPath();
     x.arc(cx, cy, 27, 0, Math.PI * 2);
@@ -112,10 +118,10 @@ function num(x: Ctx, n: number, role: Role, cx: number, cy: number, mono: string
       x.stroke();
       x.fillStyle = INK;
     }
-    x.fillText(String(n), cx, cy + 1);
+    x.fillText(String(n), cx, base);
   } else {
     x.fillStyle = fill;
-    x.fillText(label, cx, cy + 1);
+    x.fillText(label, cx, base);
   }
   x.textAlign = "left";
   x.textBaseline = "alphabetic";
@@ -163,7 +169,7 @@ export async function drawSelectionStory(d: SelStoryData): Promise<HTMLCanvasEle
       x.fillText(v, left, top + 30 * S);
     }
     x.textBaseline = "alphabetic";
-    const t = fitName(title, STORY_W - 108, measure, 210, 96);
+    const t = fitName(title, STORY_W - 108, measure, 210, 120, 2);
     let y = top + 44 * S + 18 * S;
     x.font = `800 ${t.size}px ${sans}`;
     for (const line of t.lines) {
@@ -172,7 +178,9 @@ export async function drawSelectionStory(d: SelStoryData): Promise<HTMLCanvasEle
     }
     y += 12 * S + 48;
     x.font = `500 48px ${sans}`;
-    x.fillText(`${pair}, taking turns.`, 54, y);
+    const sub = wrapLines(`${pair}, taking turns.`, STORY_W - 108, (s) => x.measureText(s).width);
+    sub.forEach((ln, i) => x.fillText(ln, 54, y + i * 62));
+    y += (sub.length - 1) * 62;
     y += 16 * S + 12;
     x.fillRect(54, y, STORY_W - 108, 6);
     y += 12 * S + 6;
@@ -285,9 +293,12 @@ export async function drawSelectionStory(d: SelStoryData): Promise<HTMLCanvasEle
   }
   y += 36 + 48;
   // Höhe passt sich an: lange Titel nehmen den Bändern etwas Höhe, nie den Sicherheitszonen
-  const t = fitName(title, STORY_W - L * 2, measure, 156, 84);
+  // lange Namen: lieber zwei Zeilen etwas kleiner als drei Zeilen, die den Bändern Platz nehmen
+  const t = fitName(title, STORY_W - L * 2, measure, 156, 96, 2);
   const titleH = t.lines.length * t.size * 0.9;
-  const fixed = 30 + 48 + 54 + 102;
+  x.font = `500 48px ${sans}`;
+  const sub = wrapLines(col.white ? `${pair} picked the same colour.` : `${pair} picked six tracks, back and forth.`, STORY_W - L * 2, (s) => x.measureText(s).width);
+  const fixed = 30 + 48 + (sub.length - 1) * 62 + 54 + 102;
   const band = Math.max(84, Math.min(114, (SAFE.bottom - 24 - y - titleH - fixed) / 6));
   x.fillStyle = PAPER;
   x.font = `800 ${t.size}px ${sans}`;
@@ -297,8 +308,8 @@ export async function drawSelectionStory(d: SelStoryData): Promise<HTMLCanvasEle
   }
   y += 30 + 48;
   x.font = `500 48px ${sans}`;
-  x.fillText(col.white ? `${pair} picked the same colour.` : `${pair} picked six tracks, back and forth.`, L, y, STORY_W - L * 2);
-  y += 54;
+  sub.forEach((ln, i) => x.fillText(ln, L, y + i * 62));
+  y += (sub.length - 1) * 62 + 54;
   d.entries.slice(0, 6).forEach((e, i) => {
     const top = y + i * band;
     const right = e.role === "B";
@@ -314,22 +325,25 @@ export async function drawSelectionStory(d: SelStoryData): Promise<HTMLCanvasEle
     x.font = `400 30px ${sans}`;
     const at = fit(x, e.artist, STORY_W - L * 2 - 90 - tw - 30);
     const aw = x.measureText(at).width;
+    x.textBaseline = "alphabetic";
+    // Titel und Artist auf derselben Grundlinie, Großbuchstaben des Titels mittig im Band
+    x.font = `800 48px ${sans}`;
+    const base = capMiddle(x, cy);
     if (!right) {
       num(x, e.position, e.role, L + 18, cy, mono, col.white, INK);
       x.fillStyle = INK;
       x.font = `800 48px ${sans}`;
-      x.fillText(tt, L + 60, cy + 2);
+      x.fillText(tt, L + 60, base);
       x.font = `400 30px ${sans}`;
-      x.fillText(at, L + 60 + tw + 30, cy + 4);
+      x.fillText(at, L + 60 + tw + 30, base);
     } else {
       num(x, e.position, e.role, STORY_W - L - 18, cy, mono, col.white, INK);
       x.fillStyle = INK;
       x.font = `800 48px ${sans}`;
-      x.fillText(tt, STORY_W - L - 60 - tw, cy + 2);
+      x.fillText(tt, STORY_W - L - 60 - tw, base);
       x.font = `400 30px ${sans}`;
-      x.fillText(at, STORY_W - L - 60 - tw - 30 - aw, cy + 4);
+      x.fillText(at, STORY_W - L - 60 - tw - 30 - aw, base);
     }
-    x.textBaseline = "alphabetic";
   });
   y += band * 6 + 54;
   x.fillStyle = PAPER;

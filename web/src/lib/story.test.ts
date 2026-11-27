@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SAFE, STORY_H, STORY_W, fitName, storyUrl } from "./story";
+import { SAFE, STORY_H, STORY_W, fitName, storyUrl, wrapLines } from "./story";
 
 // SHARE-07/09/10/10a: Profil-Story-Karte 9:16, Text außerhalb der verdeckten Zonen
 describe("Story-Karte", () => {
@@ -36,5 +36,19 @@ describe("Story-Karte", () => {
 
   it("Kurz-URL als lesbarer Text", () => {
     expect(storyUrl("lumareyes")).toBe("selectorz.art/lumareyes");
+  });
+
+  // Selection-Story mit langen Namen (PO-Feedback 27.11.): Titel lieber in zwei Zeilen, Untertitel umbrechen statt stauchen
+  it("Titel bevorzugt zwei Zeilen, wenn das mit der Mindestgröße geht", () => {
+    const r = fitName("Baptiste x DJ Gugu Gaga", 948, measure, 156, 84, 2);
+    expect(r.lines.length).toBeLessThanOrEqual(2);
+    expect(r.size).toBeGreaterThanOrEqual(84);
+    for (const l of r.lines) expect(measure(l, r.size)).toBeLessThanOrEqual(948);
+  });
+  it("Untertitel wird umgebrochen statt gestaucht", () => {
+    const lines = wrapLines("Baptiste × Dj Hardcore picked six tracks, back and forth.", 948, (t) => measure(t, 48));
+    expect(lines.length).toBe(2);
+    for (const l of lines) expect(measure(l, 48)).toBeLessThanOrEqual(948);
+    expect(lines.join(" ")).toBe("Baptiste × Dj Hardcore picked six tracks, back and forth.");
   });
 });
