@@ -16,6 +16,9 @@ export type Chain = {
   invite_open: boolean;
   public?: boolean;
   ended_by_me?: boolean;
+  title_suggestion?: string | null;
+  title_suggested_by_me?: boolean;
+  title_together?: boolean;
   participants: Person[];
   entries: Entry[];
 };

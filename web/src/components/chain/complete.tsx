@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
-import { renameChain, setApproval } from "@/app/(build)/chain/actions";
+import { setApproval } from "@/app/(build)/chain/actions";
 import { track as log } from "@/components/analytics";
+import { NameIt } from "./name-it";
 import { Record } from "@/components/selection/record";
 import { SelectionStoryDialog } from "@/components/selection/selection-story-dialog";
 import { firstName, type Chain, type Role } from "@/lib/chains";
@@ -49,8 +50,6 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
   const title = selectionTitle(c, nameA, nameB);
   const col = palette(sel);
   const yes = c.participants.filter((p) => p.approved).length;
-  const [name, setName] = useState(c.title);
-  const [renaming, setRenaming] = useState(false);
 
   const approve = (v: boolean, openStory = false) =>
     start(async () => {
@@ -66,17 +65,6 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
     setKept(true);
     if (me.approved) approve(false);
   };
-
-  const rename = () =>
-    start(async () => {
-      if (name.trim() === c.title.trim()) return setRenaming(false);
-      const r = await renameChain(c.id, name);
-      if (!r.ok) return setError(r.error);
-      setError(null);
-      onChange(r.chain);
-      setName(r.chain.title);
-      setRenaming(false);
-    });
 
   const ask = async () => {
     try {
@@ -148,10 +136,9 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
         <span className="hidden max-w-[500px] text-[13px] leading-[1.45] text-ink-3 md:block">
           A split, like a split EP: your profile photos side by side, made automatically. {c.target === 6 ? "Six tracks, three each." : `${c.entries.length} tracks.`}
         </span>
-        <span className="flex items-center gap-2.5 text-[13px] text-ink-3 md:hidden">
-          {c.title ? `Named by ${firstName(nameA)}` : "No name yet"}
-          <button type="button" onClick={() => setRenaming(true)} className="link-hover font-semibold text-ink underline underline-offset-[3px]">Rename</button>
-        </span>
+        <div className="md:hidden">
+          <NameIt c={c} colors={col} placeholder={selectionTitle({ title: "" }, nameA, nameB)} onChange={onChange} mobile />
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-col gap-[18px]">
@@ -159,12 +146,9 @@ export function Complete({ c, onChange }: { c: Chain; onChange: (c: Chain) => vo
           <span className="label-mono text-ink-3">{c.entries.length} OF {c.target} · {firstName(nameA).toUpperCase()} × {firstName(nameB).toUpperCase()}</span>
           <h1 className="text-[60px] font-extrabold leading-[0.88] tracking-[-0.055em]">Your selection is complete.</h1>
         </div>
-        <label className={`${renaming ? "flex" : "hidden"} mt-4 flex-col gap-2 text-[14px] font-semibold md:mt-0 md:flex`}>
-          <span className="flex justify-between">Name it <span className="font-normal text-ink-3">{c.title ? `Suggested by ${firstName(nameA)}` : "Up to 60 characters"}</span></span>
-          <input value={name} maxLength={60} placeholder={selectionTitle({ title: "" }, nameA, nameB)} onChange={(e) => setName(e.target.value)} onBlur={rename}
-            onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-            className="h-14 rounded-s border border-field-border bg-surface px-4 text-[24px] font-extrabold tracking-[-0.03em] outline-none placeholder:font-semibold placeholder:text-ink-4 focus:border-ink" />
-        </label>
+        <div className="hidden md:block">
+          <NameIt c={c} colors={col} placeholder={selectionTitle({ title: "" }, nameA, nameB)} onChange={onChange} />
+        </div>
 
         <div className="done-steps flex flex-col gap-[18px]">
           <section className="mt-10 flex flex-col gap-4 rounded-[18px] bg-night-bg px-5 py-[22px] text-night-t1 shadow-[-8px_0_26px_rgba(140,147,255,0.4),8px_0_26px_rgba(240,83,42,0.35)] md:mt-1.5 md:rounded-[20px] md:p-[26px] md:shadow-[-10px_0_34px_rgba(140,147,255,0.45),10px_0_34px_rgba(240,83,42,0.4)]" aria-label="Automix">

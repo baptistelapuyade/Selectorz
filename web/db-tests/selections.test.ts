@@ -98,19 +98,70 @@ describe("Selections", () => {
     expect(r.find((x: { id: string }) => x.id === c)).toMatchObject({ my_yes: false, other_yes: true, public: false });
   });
 
-  it("S5: Name ändern nur für Teilnehmende; Foto der veröffentlichten Seite in der Selection", async () => {
+  it("S5: Foto der veröffentlichten Seite in der Selection", async () => {
     const a = await newUser("Luma");
     const b = await newUser("Kofi");
-    const c3 = await newUser("Mallory");
     await publishedProfile(a, "Luma Reyes");
     const c = await fullChain(a, b);
-    await as(b, (q) => q("select public.rename_chain($1, $2)", [c, "  Late Bloom  "]));
-    await expectError(as(c3, (q) => q("select public.rename_chain($1, 'x')", [c])), /not_allowed/);
     await approve(a, c);
     await approve(b, c);
     const s = await sel(null, c);
-    expect(s.title).toBe("Late Bloom");
     expect(s.participants[0].photo).toMatchObject({ path: `${a}/avatar.png`, style: "dots" });
     expect(s.participants[1].photo).toBeNull();
+  });
+
+  // Name gemeinsam (PO 27.11.2026, Boards Abschluss · Name A/B/C): Vorschlag, Zustimmung der anderen Person
+  const suggest = (u: string, c: string, t: string) => as(u, (q) => q("select public.suggest_chain_title($1, $2)", [c, t]));
+  const accept = (u: string, c: string) => as(u, (q) => q("select public.accept_chain_title($1)", [c]));
+
+  it("S6: Startname gilt als Vorschlag der startenden Person; die andere stimmt zu", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const c = await fullChain(a, b);
+    expect(await view(b, c)).toMatchObject({ title: "Slow Sunday", title_suggestion: "Slow Sunday", title_suggested_by_me: false, title_together: false });
+    expect(await view(a, c)).toMatchObject({ title_suggestion: "Slow Sunday", title_suggested_by_me: true });
+    await expectError(accept(a, c), /not_allowed/);
+    await accept(b, c);
+    expect(await view(a, c)).toMatchObject({ title: "Slow Sunday", title_suggestion: null, title_together: true });
+  });
+
+  it("S7: Ein Vorschlag ändert den gültigen Namen erst nach Zustimmung; Gegenvorschlag braucht die andere Person", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const c = await fullChain(a, b);
+    await suggest(a, c, "  Sunday Glow  ");
+    expect(await view(b, c)).toMatchObject({ title: "Slow Sunday", title_suggestion: "Sunday Glow", title_suggested_by_me: false });
+    await suggest(b, c, "Late Bloom");
+    await expectError(accept(b, c), /not_allowed/);
+    expect((await view(a, c)).title).toBe("Slow Sunday");
+    await accept(a, c);
+    expect(await view(b, c)).toMatchObject({ title: "Late Bloom", title_suggestion: null, title_together: true });
+    // Neuer Vorschlag nach Einigung: Name bleibt bis zur Zustimmung, „together“ gilt weiter für den gültigen Namen
+    await suggest(b, c, "Night Swim");
+    expect(await view(a, c)).toMatchObject({ title: "Late Bloom", title_suggestion: "Night Swim", title_together: true });
+  });
+
+  it("S8: Fremde dürfen weder vorschlagen noch zustimmen; leere oder zu lange Namen", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const m = await newUser("Mallory");
+    const c = await fullChain(a, b);
+    await expectError(suggest(m, c, "Mine now"), /not_allowed/);
+    await expectError(accept(m, c), /not_allowed/);
+    await expectError(suggest(a, c, "   "), /empty_title/);
+    await suggest(a, c, "x".repeat(80));
+    expect((await view(b, c)).title_suggestion).toHaveLength(60);
+    await expectError(as(a, (q) => q("select public.rename_chain($1, 'x')", [c])), /does not exist/);
+  });
+
+  it("S9: Ohne Startnamen gibt es keinen Vorschlag", async () => {
+    const a = await newUser("Luma");
+    const b = await newUser("Kofi");
+    const t1 = track(1);
+    const { rows } = await as(a, (q) => q("select * from public.start_chain('', $1, $2, $3, '', $4)", [t1.url, t1.title, t1.artist, randomUUID()]));
+    const t2 = track(2);
+    await as(b, (q) => q("select public.join_chain($1, $2, $3, $4, '', $5)", [rows[0].invite_token, t2.url, t2.title, t2.artist, randomUUID()]));
+    expect(await view(a, rows[0].chain_id)).toMatchObject({ title: "", title_suggestion: null, title_together: false });
+    await expectError(accept(b, rows[0].chain_id), /no_suggestion/);
   });
 });
