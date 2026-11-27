@@ -166,3 +166,53 @@ test("F3: Name gemeinsam: Vorschlag gilt erst nach Zustimmung, öffentliche Sele
   await anon.close();
   await kofiCtx.close();
 });
+
+test("F4: Story später wiederfinden: Share-Menü auf der Selection-Seite und „Make a story“ auf Home (PO 27.11.)", async ({ page, browser }, info) => {
+  test.setTimeout(150_000);
+  const luma = await liveProfileUser(page, "Luma Reyes");
+  const kofiCtx = await browser.newContext(ctx(info));
+  const kofi = await kofiCtx.newPage();
+  const kofiMail = fresh("kofi");
+  await login(kofi, kofiMail);
+  const kofiId = await userId(kofiMail);
+  await asUser(kofiId, (q) => q("update public.accounts set display_name = 'Kofi Mensah' where id = $1", [kofiId]));
+  const chain = await completedChain(luma.uid, kofiId);
+  await kofi.goto(`/chain/${chain}`);
+  await kofi.getByRole("button", { name: "Approve and make a story" }).click();
+  await page.goto(`/chain/${chain}`);
+  await page.getByRole("button", { name: "Approve and make a story" }).click();
+  // Story wegklicken: danach soll sie trotzdem wieder erreichbar sein
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // Selection-Seite: Beteiligte bekommen ein Menü mit „Make a story“
+  await page.goto(`/s/${chain}`);
+  await page.getByRole("button", { name: "Share" }).click();
+  await expect(page.getByRole("menuitem", { name: /Copy link/ })).toBeVisible();
+  await page.getByRole("menuitem", { name: /Make a story/ }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await shot(page, "share-story-selection");
+  await page.keyboard.press("Escape");
+
+  // Home: öffentliche Runde mit „Make a story“ führt direkt in die Story (Aktion nur am Desktop, Board M1cHomeRounds2)
+  if (info.project.name === "desktop") {
+  await page.goto("/home");
+  const row = page.getByTestId("round-row").filter({ hasText: "Slow Sunday" });
+  await expect(row).toContainText("Public");
+  await page.getByRole("link", { name: "Make a story" }).click();
+  await expect(page).toHaveURL(new RegExp(`/s/${chain}`));
+  await expect(page.getByRole("dialog")).toBeVisible();
+  }
+
+  // Fremde: kein Menü, nur Link
+  const anon = await browser.newContext(ctx(info));
+  const visitor = await anon.newPage();
+  await visitor.goto(`/s/${chain}`);
+  await visitor.getByRole("button", { name: "Share" }).click();
+  await expect(visitor.getByRole("menuitem", { name: /Make a story/ })).toHaveCount(0);
+  await visitor.goto(`/s/${chain}?story=1`);
+  await expect(visitor.getByRole("dialog")).toHaveCount(0);
+  await anon.close();
+  await kofiCtx.close();
+});
