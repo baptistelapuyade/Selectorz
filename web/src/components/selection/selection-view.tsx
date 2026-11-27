@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { PlayButton, PlayFrame, PlayProvider } from "@/components/chain/ui";
 import { ReportLink } from "@/components/profile/report-sheet";
-import { ShareButton } from "@/components/profile/share-button";
 import { firstName, type Role } from "@/lib/chains";
 import { PROVIDER_LABEL, providerOf } from "@/lib/profile";
+import { SelectionShare } from "./selection-share";
 import { palette, pickLabel, selectionTitle, type SelPerson, type Selection } from "@/lib/selection";
 
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
@@ -13,7 +13,7 @@ const month = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { month
 
 // Öffentliche Selection (Board DeskSelection, PUBLISH-05): neutraler Selectorz-Look, nur die Akzente der beiden.
 // Kein „Play all“ (MEDIA-10): jeder Track spielt einzeln auf seiner Plattform.
-export function SelectionView({ s }: { s: Selection }) {
+export function SelectionView({ s, me = null, openStory = false }: { s: Selection; me?: Role | null; openStory?: boolean }) {
   const a = s.participants.find((p) => p.role === "A")!;
   const b = s.participants.find((p) => p.role === "B")!;
   const names: Record<Role, string> = { A: a.name, B: b.name };
@@ -27,7 +27,7 @@ export function SelectionView({ s }: { s: Selection }) {
         <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 py-5 md:px-10 md:py-8">
           <Link href="/" className="text-[22px] font-extrabold tracking-[-0.045em] md:text-[34px]">Selectorz</Link>
           <span className="flex items-center gap-4">
-            <ShareButton name={title} color="#111111" />
+            <SelectionShare s={s} title={title} me={me} openStory={openStory} />
             <Link href="/" className="hidden h-11 items-center rounded-full bg-ink px-5 text-[14px] font-semibold text-night-t1 md:flex">Get your page</Link>
           </span>
         </header>

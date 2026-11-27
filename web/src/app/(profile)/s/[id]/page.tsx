@@ -6,8 +6,10 @@ import { SelectionView } from "@/components/selection/selection-view";
 import { firstName } from "@/lib/chains";
 import { selectionTitle } from "@/lib/selection";
 import { getSelection } from "@/lib/selection-server";
+import { createClient } from "@/lib/supabase/server";
+import type { Role } from "@/lib/chains";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ story?: string }> };
 
 // Nicht freigegeben: dieselben neutralen Daten wie eine nie vergebene Adresse (SHARE-04, TRUST-11)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -23,11 +25,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-async function Load({ params }: Props) {
+// Wer die Seite ansieht: eine der beiden Personen bekommt „Make a story“ (Boards DeskSelectionShare, SelectionShare)
+async function myRole(id: string): Promise<Role | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("chain_view", { p_chain: id });
+  return ((data as { my_role?: Role } | null)?.my_role as Role | undefined) ?? null;
+}
+
+async function Load({ params, searchParams }: Props) {
   await connection();
-  const s = await getSelection((await params).id);
+  const id = (await params).id;
+  const s = await getSelection(id);
   if (!s) notFound();
-  return <SelectionView s={s} />;
+  const me = await myRole(id);
+  // „Make a story“ auf Home führt mit ?story=1 hierher und öffnet die Story direkt
+  return <SelectionView s={s} me={me} openStory={!!me && (await searchParams).story === "1"} />;
 }
 
 export default function SelectionPage(props: Props) {
