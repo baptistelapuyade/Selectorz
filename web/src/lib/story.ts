@@ -23,9 +23,21 @@ function wrap(words: string[], size: number, width: number, measure: Measure) {
   return lines;
 }
 
+// Fließtext in Zeilen umbrechen (statt per maxWidth zu stauchen)
+export function wrapLines(text: string, width: number, measure: (t: string) => number) {
+  return wrap(text.trim().split(/\s+/), 0, width, (t) => measure(t));
+}
+
 // Name möglichst groß, höchstens drei Zeilen; lieber kleiner als abgeschnitten.
-export function fitName(name: string, width: number, measure: Measure, max = 210, min = 72) {
+// Mit prefer = 2: erst prüfen, ob zwei Zeilen bei mindestens min passen (ruhiger als drei große Zeilen).
+export function fitName(name: string, width: number, measure: Measure, max = 210, min = 72, prefer = 3) {
   const words = name.trim().split(/\s+/);
+  if (prefer < 3)
+    for (let size = max; size >= min; size -= 6) {
+      if (words.some((w) => measure(w, size) > width)) continue;
+      const lines = wrap(words, size, width, measure);
+      if (lines.length <= prefer) return { size, lines };
+    }
   for (let size = max; size >= min; size -= 6) {
     if (words.some((w) => measure(w, size) > width)) continue;
     const lines = wrap(words, size, width, measure);
