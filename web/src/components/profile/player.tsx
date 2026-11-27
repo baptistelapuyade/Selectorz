@@ -62,7 +62,7 @@ export function PlayerCard({
     <div className="flex flex-col rounded-[6px] border" style={{ background: surface, borderColor: line }}>
       <div className="flex items-center gap-3 p-3.5 md:gap-4 md:p-[18px]">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={`${big ? "text-[28px] md:text-[34px]" : "text-[24px] md:text-[28px]"} line-clamp-2 font-extrabold leading-[0.95] tracking-[-0.035em]`}>{title}</span>
+          <span className={`${big ? "text-[28px] md:text-[34px]" : "text-[24px] md:text-[28px]"} line-clamp-2 pb-[0.1em] font-extrabold leading-[0.95] tracking-[-0.035em]`}>{title}</span>
           {sub && <span className="truncate text-[13px] md:text-[14px]" style={{ color: muted }}>{sub}</span>}
         </div>
         {src ? (
