@@ -195,13 +195,15 @@ test("F4: Story später wiederfinden: Share-Menü auf der Selection-Seite und �
   await shot(page, "share-story-selection");
   await page.keyboard.press("Escape");
 
-  // Home: öffentliche Runde mit „Make a story“ führt direkt in die Story
+  // Home: öffentliche Runde mit „Make a story“ führt direkt in die Story (Aktion nur am Desktop, Board M1cHomeRounds2)
+  if (info.project.name === "desktop") {
   await page.goto("/home");
   const row = page.getByTestId("round-row").filter({ hasText: "Slow Sunday" });
   await expect(row).toContainText("Public");
-  await row.getByRole("link", { name: "Make a story" }).click();
+  await page.getByRole("link", { name: "Make a story" }).click();
   await expect(page).toHaveURL(new RegExp(`/s/${chain}`));
   await expect(page.getByRole("dialog")).toBeVisible();
+  }
 
   // Fremde: kein Menü, nur Link
   const anon = await browser.newContext(ctx(info));

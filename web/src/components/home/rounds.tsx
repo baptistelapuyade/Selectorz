@@ -237,10 +237,9 @@ function Row({ r, cols }: { r: Round; cols: string }) {
   const href = pub ? `/s/${r.id}` : `/chain/${r.id}`;
   return (
     <li className="relative border-t border-line-soft">
-      <div data-testid="round-row" className={`row-hover grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3 md:h-16 md:gap-4 md:px-5 md:py-0 ${cols}`}>
+      <Link href={href} data-testid="round-row" className={`row-hover grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3 md:h-16 md:gap-4 md:px-5 md:py-0 ${cols}`}>
         <span className="flex min-w-0 flex-col gap-0.5">
-          {/* Die ganze Zeile ist der Link (über ::after), die Aktion rechts kann ein eigener Link sein */}
-          <Link href={href} className="truncate text-[16px] font-semibold after:absolute after:inset-0 after:content-['']">{roundTitle(r)}</Link>
+          <span className="truncate text-[16px] font-semibold">{roundTitle(r)}</span>
           <span className="text-[12px] text-ink-3">{ago(r.updated_at)}</span>
         </span>
         <span className="hidden min-w-0 items-center gap-2.5 md:flex">
@@ -253,12 +252,12 @@ function Row({ r, cols }: { r: Round; cols: string }) {
         </span>
         <span className="row-start-1 col-start-2 md:row-auto md:col-auto"><Status r={r} /></span>
         <span className="col-span-2 text-[13px] text-ink-3 md:hidden">{r.other ? `with ${r.other.name}` : statusLine(r)}</span>
-        {pub ? (
-          <Link href={`/s/${r.id}?story=1`} className="link-hover relative z-10 hidden justify-self-end whitespace-nowrap text-[14px] font-semibold underline underline-offset-[3px] md:block">{action}</Link>
-        ) : (
-          <span className="hidden justify-self-end whitespace-nowrap text-[14px] font-semibold underline underline-offset-[3px] md:block">{action}</span>
-        )}
-      </div>
+        {/* Bei öffentlichen Runden ist die Aktion ein eigener Link (darüber gelegt, keine verschachtelten Links) */}
+        <span aria-hidden={pub} className={`hidden justify-self-end whitespace-nowrap text-[14px] font-semibold underline underline-offset-[3px] md:block ${pub ? "invisible" : ""}`}>{action}</span>
+      </Link>
+      {pub && (
+        <Link href={`/s/${r.id}?story=1`} className="link-hover absolute right-5 top-1/2 hidden -translate-y-1/2 whitespace-nowrap text-[14px] font-semibold underline underline-offset-[3px] md:block">{action}</Link>
+      )}
     </li>
   );
 }
